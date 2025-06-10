@@ -3,7 +3,7 @@
 import time, sys
 
 from reader.acr1552 import ACR1552
-from vicinity.ntag5link import NTAG5Link, NXP_CONFIG_1_USE_CASE_CONF_I2C_MASTER, NXP_EH_CONFIG_EH_VOUT_I_SEL_4_0, NXP_EH_CONFIG_EH_VOUT_V_SEL_3_0, NXP_EH_CONFIG_EH_VOUT_V_SEL_2_4, NXP_EH_CONFIG_EH_VOUT_I_SEL_1_4, NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8, NXP_EH_CONFIG_EH_VOUT_I_SEL_0_4, NXP_EH_CONFIG_EH_VOUT_I_SEL_0_6
+from vicinity.ntag5link import *
 from vicinity.tmp117 import TMP117
 
 from cli import argparser, display
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     # Read attached temperature sensor
     print("info: Reading sensor")
-    temp_sensor = TMP117(chip)
+    temp_sensor = TMP117(chip, args.tmp117address)
     while(True):
         try:
             reading = temp_sensor.read_temperature()
