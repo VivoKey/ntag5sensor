@@ -102,13 +102,19 @@ if __name__ == "__main__":
             # Read attached temperature sensor
             print("info: Reading sensor")
             temp_sensor = TMP117(chip, args.address)
-            while(True):
-                try:
-                    reading = temp_sensor.read_temperature()
-                    if(reading != None):
-                        print(f"info: Temperature is {reading} °C")
-                except KeyboardInterrupt:
-                    break
+            print("info: Persistent TMP117 configuration:")
+            tmp117_config_info = temp_sensor.get_config_info()
+            display.print_tmp117_config_info(tmp117_config_info)
+            print("info: Other persistent TMP117 EEPROM content:")
+            tmp117_eeprom_info = temp_sensor.get_eeprom_info()
+            display.print_tmp117_eeprom_info(tmp117_eeprom_info)
+            #while(True):
+            #    try:
+            #        reading = temp_sensor.read_temperature()
+            #        if(reading != None):
+            #            print(f"info: Temperature is {reading} °C")
+            #    except KeyboardInterrupt:
+            #        break
 
     # Disconnect tag 
     acr.disconnect()
