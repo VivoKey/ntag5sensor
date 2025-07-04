@@ -92,6 +92,7 @@ def validate(parser, args):
             if isinstance(action, argparse._SubParsersAction)]
         for subparsers_action in subparsers_actions:
             for _, action in subparsers_action.choices.items():
+                print(action.format_help())
                 subparsers_verbs = [
                     action for action in action._actions 
                     if isinstance(action, argparse._SubParsersAction)]

@@ -94,20 +94,21 @@ if __name__ == "__main__":
         chip.eh_control(trigger = True, enable = True)
         print("info: Energy harvesting active")
 
-        # Read attached temperature sensor
+        # Connect to attached TMP117 sensor
         print("info: Connecting to TMP117 sensor")
         tmp117 = TMP117(chip, args.address)
 
         if(args.verb == "info"):
-            # Display TMP117 information
+            # Display TMP117 config
             print("info: Persistent TMP117 configuration:")
             tmp117_config_info = tmp117.get_config_info()
             display.print_tmp117_config_info(tmp117_config_info)
+            # Display other EEPROm fields of TMP117
             print("info: Other persistent TMP117 EEPROM content:")
             tmp117_eeprom_info = tmp117.get_eeprom_info()
             display.print_tmp117_eeprom_info(tmp117_eeprom_info)
         elif(args.verb == "setup"):
-            # Write supplied config options to TMP117 EEPROM
+            # Write supplied config options to TMP117 config EEPROM
             print("info: Writing persistent TMP117 configuration")
             print(f"info: Writing boot mode: {args.mode}, average: {args.average} samples, cycle mode: {args.cycle}")
             mode = TMP117_CONFIG_FLAG_MOD_SHUTDOWN
@@ -125,14 +126,16 @@ if __name__ == "__main__":
             print("info: Successfully wrote persistent configuration")
         elif(args.verb == "read"):
             if(args.mode == "oneshot"):
+                # In oneshot mode, manually trigger conversions
                 while(True):
                     try:
                         print("info: Triggering oneshot measurement")
                         tmp117.write_config(conversion_mode = TMP117_CONFIG_FLAG_MOD_ONESHOT)
+                        # Poll for data available
                         while(True):
                             reading = tmp117.read_temperature()
                             if(reading != None):
-                                print(f"info: Temperature is {reading} °C")
+                                print(f"info: Temperature is {reading:.3f} °C, {display.celsius_to_fahrenheit(reading):.3f} °F")
                                 break
                         print("info: Waiting for 2 seconds")
                         time.sleep(2)
@@ -141,11 +144,12 @@ if __name__ == "__main__":
             elif(args.mode == "continuous"):
                 print("info: Running in continuous measurement mode")
                 tmp117.write_config(conversion_mode = TMP117_CONFIG_FLAG_MOD_CONT)
+                # In continuous mode, just poll for data available
                 while(True):
                     try:
                         reading = tmp117.read_temperature()
                         if(reading != None):
-                            print(f"info: Temperature is {reading} °C")
+                            print(f"info: Temperature is {reading:.3f} °C, {display.celsius_to_fahrenheit(reading):.3f} °F")
                     except KeyboardInterrupt:
                         break
 

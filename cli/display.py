@@ -1,3 +1,6 @@
+def celsius_to_fahrenheit(temp):
+    return (temp * 1.8) + 32
+
 def print_system_info(info):
     print(f" - Unique identifier (UID): {info["uid"].hex()}")
     if("afi" in info):
