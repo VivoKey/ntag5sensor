@@ -82,7 +82,8 @@ class TMP117:
             print("info: I2C bus is still busy, waiting ...")
             time.sleep(0.1)
         self.chip.write_i2c(0x00, bytes([TMP117_I2C_CALL_RESET_CMD]))
-        # Dont wait for acknowledgement
+        if(not self.chip.check_i2c_write_result()):
+            raise Exception("General call was not acknowledged")
 
     def get_config_info(self):
         config = self.read_register(TMP117_I2C_REG_CONFIG)
