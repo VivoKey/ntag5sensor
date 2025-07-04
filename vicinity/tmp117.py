@@ -12,6 +12,9 @@ TMP117_I2C_REG_TEMP_OFFSET =        0x07
 TMP117_I2C_REG_EEPROM3 =            0x08
 TMP117_I2C_REG_DEVICE_ID =          0x0F
 
+# Reset command
+TMP117_I2C_CALL_RESET_CMD =         0x06
+
 # Config register flags
 TMP117_CONFIG_FLAG_SOFT_RESET =     (1 << 1)
 TMP117_CONFIG_FLAG_ALERT_SEL =      (1 << 2)
@@ -41,6 +44,10 @@ TMP117_CONFIG_FLAG_MOD_ONESHOT =    (3 << 10)
 TMP117_DEVICE_ID_DID_MASK =         0x0FFF
 TMP117_DEVICE_ID_REV_MASK =         0xF000
 
+# EEPROM unlock flags
+TMP117_EEPROM_UL_EUN =              (1 << 15)
+TMP117_EEPROM_UL_EEPROM_BUSY =      (1 << 14)
+
 
 class TMP117:
     def __init__(self, ntag5link, address):
@@ -60,6 +67,22 @@ class TMP117:
         self.chip.read_i2c(self.address, 2)
         data = self.chip.read_sram()
         return data[0:2]
+
+    def write_register(self, register, data):
+        while(self.chip.check_i2c_busy()):
+            print("info: I2C bus is still busy, waiting ...")
+            time.sleep(0.1)
+        self.chip.write_i2c(self.address, bytes([register] + data))
+        if(not self.chip.check_i2c_write_result()):
+            raise Exception("Register address and data write was not acknowledged")
+
+    def general_reset(self):
+        # Perform I2C General-Call Reset
+        while(self.chip.check_i2c_busy()):
+            print("info: I2C bus is still busy, waiting ...")
+            time.sleep(0.1)
+        self.chip.write_i2c(0x00, bytes([TMP117_I2C_CALL_RESET_CMD]))
+        # Dont wait for acknowledgement
 
     def get_config_info(self):
         config = self.read_register(TMP117_I2C_REG_CONFIG)
@@ -158,8 +181,47 @@ class TMP117:
 
         return ret
             
-    def write_config(self):
-        pass
+    def write_config(self, eeprom_persistent = False, conversion_mode = None, 
+            conversion_cycle = None, conversion_averaging = None):
+        # Read current values
+        config = self.read_register(TMP117_I2C_REG_CONFIG)
+        config = int.from_bytes(config[0:2], byteorder="big")
+        
+        # Apply new parameters
+        if(conversion_mode != None):
+            config &= ~TMP117_CONFIG_FLAG_MOD_MASK
+            config |= conversion_mode 
+        if(conversion_cycle != None):
+            config &= ~TMP117_CONFIG_FLAG_CONV_MASK
+            config |= ((conversion_cycle << 7) & TMP117_CONFIG_FLAG_CONV_MASK)
+        if(conversion_averaging != None):    
+            config &= ~TMP117_CONFIG_FLAG_AVG_MASK
+            config |= conversion_averaging
+
+        if(not eeprom_persistent):
+            # Write to memory only
+            self.write_register(TMP117_I2C_REG_CONFIG, list(config.to_bytes(2, byteorder="big")))
+        else:
+            # Unlock the EEPROM by setting unlock bit in unlock register
+            self.write_register(TMP117_I2C_REG_EEPROM_UL, [TMP117_EEPROM_UL_EUN])
+            # Write config to persistent storage
+            self.write_register(TMP117_I2C_REG_CONFIG, list(config.to_bytes(2, byteorder="big")))
+            # Wait for EEPROM write to complete
+            while(True):
+                # Check EEPROM busy flag
+                eeprom_ul = self.read_register(TMP117_I2C_REG_EEPROM_UL)
+                if(eeprom_ul & TMP117_EEPROM_UL_EEPROM_BUSY == 0):
+                    print("info: EEPROM writing completed")
+                    break
+                print("info: EEPROM writing is still ongoing, waiting ...")
+                time.sleep(0.1)
+            # Reset the chip
+            self.general_reset()
+            # Read the changed values
+            config_new = self.read_register(TMP117_I2C_REG_CONFIG)
+            config_new = int.from_bytes(config_new[0:2], byteorder="big")
+            if(config_new != config):
+                raise Exception("Could not confirm EEPROM changes after reset")
 
     def read_temperature(self):
         config = self.read_register(TMP117_I2C_REG_CONFIG)

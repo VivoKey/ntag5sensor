@@ -4,7 +4,7 @@ import time, sys
 
 from reader.acr1552 import ACR1552
 from vicinity.ntag5link import *
-from vicinity.tmp117 import TMP117
+from vicinity.tmp117 import *
 
 from cli import argparser, display
 
@@ -94,27 +94,46 @@ if __name__ == "__main__":
         chip.eh_control(trigger = True, enable = True)
         print("info: Energy harvesting active")
 
+        # Read attached temperature sensor
+        print("info: Connecting to TMP117 sensor")
+        tmp117 = TMP117(chip, args.address)
+
         if(args.verb == "info"):
-            pass
-        elif(args.verb == "setup"):
-            pass
-        elif(args.verb == "read"):
-            # Read attached temperature sensor
-            print("info: Reading sensor")
-            temp_sensor = TMP117(chip, args.address)
             print("info: Persistent TMP117 configuration:")
-            tmp117_config_info = temp_sensor.get_config_info()
+            tmp117_config_info = tmp117.get_config_info()
             display.print_tmp117_config_info(tmp117_config_info)
             print("info: Other persistent TMP117 EEPROM content:")
-            tmp117_eeprom_info = temp_sensor.get_eeprom_info()
+            tmp117_eeprom_info = tmp117.get_eeprom_info()
             display.print_tmp117_eeprom_info(tmp117_eeprom_info)
-            #while(True):
-            #    try:
-            #        reading = temp_sensor.read_temperature()
-            #        if(reading != None):
-            #            print(f"info: Temperature is {reading} °C")
-            #    except KeyboardInterrupt:
-            #        break
+        elif(args.verb == "setup"):
+            print("info: Writing persistent TMP117 configuration")
+            tmp117.write_config(conversion_mode = TMP117_CONFIG_FLAG_MOD_ONESHOT, 
+                conversion_cycle = 2, conversion_averaging = TMP117_CONFIG_FLAG_AVG_32)
+        elif(args.verb == "read"):
+            if(args.mode == "oneshot"):
+                while(True):
+                    try:
+                        print("info: Triggering oneshot measurement")
+                        tmp117.write_config(conversion_mode = TMP117_CONFIG_FLAG_MOD_ONESHOT)
+                        while(True):
+                            reading = tmp117.read_temperature()
+                            if(reading != None):
+                                print(f"info: Temperature is {reading} °C")
+                                break
+                        print("info: Waiting for 2 seconds")
+                        time.sleep(2)
+                    except KeyboardInterrupt:
+                        break
+            elif(args.mode == "continuous"):
+                print("info: Running in continuous measurement mode")
+                tmp117.write_config(conversion_mode = TMP117_CONFIG_FLAG_MOD_CONT)
+                while(True):
+                    try:
+                        reading = tmp117.read_temperature()
+                        if(reading != None):
+                            print(f"info: Temperature is {reading} °C")
+                    except KeyboardInterrupt:
+                        break
 
     # Disconnect tag 
     acr.disconnect()
