@@ -2,7 +2,7 @@
 
 Sensor reading for the `NXP NTAG 5 Link`, specifically with the `Texas Instruments TMP117` sensor and the `ACS ACR1552U` PC/SC reader.
 
-For development hardware, use e.g. the MikroElektronika [NTAG 5 Link Click board](https://www.mikroe.com/ntag-5-link-click).
+For development hardware, use e.g. the MikroElektronika [NTAG 5 Link Click](https://www.mikroe.com/ntag-5-link-click) and [Thermo 11 Click](https://www.mikroe.com/thermo-11-click).
 
 ## Setup
 
@@ -48,7 +48,7 @@ This assumes you have an assembly with the factory default configuration. The pa
 ./ntag5sensor.py info
 ```
 
-Then, setup the NTAG5 Link, by modifying its internal persistent configuration store. This automatically enables SRAM and I2C master mode, and applies the specified current and voltage configurations for energy harvesting. The default is 0.4 mA and 1.8 V. Afterwards, you can confirm your changes have been applied by running the `info` action again.
+Then, setup the NTAG5 Link, by modifying its internal persistent configuration store. This automatically enables SRAM and I2C master mode, and applies the specified current and voltage configurations for energy harvesting. The default is `0.4` mA and `1.8` V. Afterwards, you can confirm your changes have been applied by running the `info` action again.
 
 ```
 ./ntag5sensor.py setup -c 0.4 -v 1.8
@@ -65,6 +65,7 @@ Now, setup the persistent configuration of the connected TMP117 sensor. This exa
 
 ```
 ./ntag5sensor.py tmp117 setup -a 72 -av 8 -cy 4 -mo oneshot
+./ntag5sensor.py tmp117 info -a 72
 ```
 
 Finally, you can read out the measurements from the sensor. This step is the only one you will need to run in the future, as the previous setting are applied persistently. You can specify a different mode than the one applied during sensor boot via the persistent configuration, the script will then switch the mode using the transient runtime configuration.
