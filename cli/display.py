@@ -75,3 +75,17 @@ def print_config_info(info):
         print(f"   - GPIO0 pad input mode: {info['gpio0_pad_in']}")
     if ("gpio1_pad_in" in info):
         print(f"   - GPIO1 pad input mode: {info['gpio1_pad_in']}")
+
+def print_eh_ed_config_info(config):
+    if "eh_enable" in config:
+        state = "enabled" if config["eh_enable"] else "disabled"
+        print(f"   - Energy harvesting at boot: {state}")
+    if "eh_vout_i_sel" in config:
+        print(f"   - Energy harvesting minimum current trigger: {config['eh_vout_i_sel']} mA")
+    if "eh_vout_v_sel" in config:
+        print(f"   - Energy harvesting output voltage: {config['eh_vout_v_sel']} V")
+    if "disable_power_check" in config:
+        state = "disabled" if config["disable_power_check"] else "enabled"
+        print(f"   - Energy harvesting power check: {state}")
+    if "ed_config" in config:
+        print(f"   - Energy detection config: {config['ed_config'].replace('_', ' ').capitalize()}")

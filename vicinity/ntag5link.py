@@ -118,7 +118,25 @@ NXP_EH_CONFIG_EH_VOUT_I_SEL_12_5 =              (7 << 4)
 NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8 =               (0 << 1)
 NXP_EH_CONFIG_EH_VOUT_V_SEL_2_4 =               (1 << 1)
 NXP_EH_CONFIG_EH_VOUT_V_SEL_3_0 =               (2 << 1)
+NXP_EH_CONFIG_EH_VOUT_V_SEL_RFU =               (3 << 1)
 
+# Energy detection configuration flags
+NXP_ED_CONFIG_DISABLE =                         0x00
+NXP_ED_CONFIG_NFC_FIELD_DETECT =                0x01
+NXP_ED_CONFIG_PWM =                             0x02
+NXP_ED_CONFIG_I2C_TO_NFC_PASS_THROUGH =         0x03
+NXP_ED_CONFIG_NFC_TO_I2C_PASS_THROUGH =         0x04
+NXP_ED_CONFIG_ARBITER_LOCK =                    0x05
+NXP_ED_CONFIG_NDEF_MSG_TLV_LENGTH =             0x06
+NXP_ED_CONFIG_STANDBY_MODE =                    0x07
+NXP_ED_CONFIG_WRITE_CMD_INDICATION =            0x08
+NXP_ED_CONFIG_READ_CMD_INDICATION =             0x09
+NXP_ED_CONFIG_START_OF_COMMAND_INDICATION =     0x0A
+NXP_ED_CONFIG_READ_FROM_SYNCH_BLOCK =           0x0B
+NXP_ED_CONFIG_WRITE_TO_SYNCH_BLOCK =            0x0C
+NXP_ED_CONFIG_SOFTWARE_INTERRUPT =              0x0D
+NXP_ED_CONFIG_RFU1 =                            0x0E
+NXP_ED_CONFIG_RFU2 =                            0x0F
 
 
 class NTAG5Link(ISO15693):
@@ -266,6 +284,58 @@ class NTAG5Link(ISO15693):
 
         return res
 
+    def get_eh_ed_config_info(self):
+        config = self.read_config_block(NXP_CONFIG_ADDR_EH_CONFIG)
+
+        res = {}
+
+        i_sel_lookup = {
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_0_4: "0.4",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_0_6: "0.6",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_1_4: "1.4",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_2_7: "2.7",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_4_0: "4.0",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_6_5: "6.5",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_9_0: "9.0",
+            NXP_EH_CONFIG_EH_VOUT_I_SEL_12_5: "12.5"
+        }
+
+        res["eh_vout_i_sel"] = i_sel_lookup.get(config[0] & NXP_EH_CONFIG_EH_VOUT_I_SEL_12_5, "unknown") # Full mask for EH_VOUT_I_SEL
+        res["disable_power_check"] = bool(config[0] & NXP_EH_CONFIG_DISABLE_POWER_CHECK)
+        
+        v_sel_lookup = {
+            NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8: "1.8",
+            NXP_EH_CONFIG_EH_VOUT_V_SEL_2_4: "2.4",
+            NXP_EH_CONFIG_EH_VOUT_V_SEL_3_0: "3.0",
+            NXP_EH_CONFIG_EH_VOUT_V_SEL_RFU: "RFU"
+        }
+        
+        res["eh_vout_v_sel"] = v_sel_lookup.get(config[0] & NXP_EH_CONFIG_EH_VOUT_V_SEL_RFU, "unknown") # Full mask for EH_VOUT_V_SEL
+        res["eh_enable"] = bool(config[0] & NXP_EH_CONFIG_EH_ENABLE)
+
+        ed_config_lookup = {
+            NXP_ED_CONFIG_DISABLE: "disable",
+            NXP_ED_CONFIG_NFC_FIELD_DETECT: "nfc_field_detect",
+            NXP_ED_CONFIG_PWM: "pwm",
+            NXP_ED_CONFIG_I2C_TO_NFC_PASS_THROUGH: "i2c_to_nfc_pass_through",
+            NXP_ED_CONFIG_NFC_TO_I2C_PASS_THROUGH: "nfc_to_i2c_pass_through",
+            NXP_ED_CONFIG_ARBITER_LOCK: "arbiter_lock",
+            NXP_ED_CONFIG_NDEF_MSG_TLV_LENGTH: "ndef_msg_tlv_length",
+            NXP_ED_CONFIG_STANDBY_MODE: "standby_mode",
+            NXP_ED_CONFIG_WRITE_CMD_INDICATION: "write_cmd_indication",
+            NXP_ED_CONFIG_READ_CMD_INDICATION: "read_cmd_indication",
+            NXP_ED_CONFIG_START_OF_COMMAND_INDICATION: "start_of_command_indication",
+            NXP_ED_CONFIG_READ_FROM_SYNCH_BLOCK: "read_from_synch_block",
+            NXP_ED_CONFIG_WRITE_TO_SYNCH_BLOCK: "write_to_synch_block",
+            NXP_ED_CONFIG_SOFTWARE_INTERRUPT: "software_interrupt",
+            NXP_ED_CONFIG_RFU1: "rfu1",
+            NXP_ED_CONFIG_RFU2: "rfu2"
+        }
+
+        res["ed_config"] = ed_config_lookup.get(config[2] & NXP_ED_CONFIG_RFU2, "unknown") # Full mask for ED_CONFIG
+
+        return res
+
     def write_config_block(self, address, block_data):
         if(len(block_data) != 4):
             raise Exception("Block data must be four bytes")
@@ -285,16 +355,14 @@ class NTAG5Link(ISO15693):
             (NXP_CONFIG_1_EH_ARBITER_MODE_EN if arbiter_mode_en else 0x00)
         self.write_config_block(NXP_CONFIG_ADDR_CONFIG, bytes(config))
 
-    def write_eh_config(self, enable = False, disable_power_check = False, 
-            current = NXP_EH_CONFIG_EH_VOUT_I_SEL_0_4, voltage = NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8):
-        # Read the existing page (to not overwrite ED_CONFIG)
-        eh_config = list(self.read_config_block(NXP_CONFIG_ADDR_EH_CONFIG))
-        # Construct EH_CONFIG and update page
-        eh_config[0] = (NXP_EH_ENABLE if enable else 0x00) | \
+    def write_eh_ed_config(self, enable = False, disable_power_check = False, 
+            current = NXP_EH_CONFIG_EH_VOUT_I_SEL_0_4, voltage = NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8,
+            ed_config = NXP_ED_CONFIG_DISABLE):
+        # Construct EH_CONFIG
+        eh_config = (NXP_EH_ENABLE if enable else 0x00) | \
             (NXP_EH_CONFIG_DISABLE_POWER_CHECK if disable_power_check else 0x00) | \
             voltage | current
-        # eh_config[2] = 0x01 # ED_CONFIG NFC detect
-        self.write_config_block(NXP_CONFIG_ADDR_EH_CONFIG, bytes(eh_config))
+        self.write_config_block(NXP_CONFIG_ADDR_EH_CONFIG, bytes([eh_config, 0x00, ed_config, 0x00]))
 
     def read_sram(self, address = 0x00, num_blocks = 1):
         # The base command always reads one block more than specified
