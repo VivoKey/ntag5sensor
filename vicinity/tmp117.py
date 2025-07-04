@@ -203,13 +203,14 @@ class TMP117:
             self.write_register(TMP117_I2C_REG_CONFIG, list(config.to_bytes(2, byteorder="big")))
         else:
             # Unlock the EEPROM by setting unlock bit in unlock register
-            self.write_register(TMP117_I2C_REG_EEPROM_UL, [TMP117_EEPROM_UL_EUN])
+            self.write_register(TMP117_I2C_REG_EEPROM_UL, list(TMP117_EEPROM_UL_EUN.to_bytes(2, byteorder="big")))
             # Write config to persistent storage
             self.write_register(TMP117_I2C_REG_CONFIG, list(config.to_bytes(2, byteorder="big")))
             # Wait for EEPROM write to complete
             while(True):
                 # Check EEPROM busy flag
                 eeprom_ul = self.read_register(TMP117_I2C_REG_EEPROM_UL)
+                eeprom_ul = int.from_bytes(eeprom_ul[0:2], byteorder="big")
                 if(eeprom_ul & TMP117_EEPROM_UL_EEPROM_BUSY == 0):
                     print("info: EEPROM writing completed")
                     break

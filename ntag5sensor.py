@@ -99,6 +99,7 @@ if __name__ == "__main__":
         tmp117 = TMP117(chip, args.address)
 
         if(args.verb == "info"):
+            # Display TMP117 information
             print("info: Persistent TMP117 configuration:")
             tmp117_config_info = tmp117.get_config_info()
             display.print_tmp117_config_info(tmp117_config_info)
@@ -106,9 +107,22 @@ if __name__ == "__main__":
             tmp117_eeprom_info = tmp117.get_eeprom_info()
             display.print_tmp117_eeprom_info(tmp117_eeprom_info)
         elif(args.verb == "setup"):
+            # Write supplied config options to TMP117 EEPROM
             print("info: Writing persistent TMP117 configuration")
-            tmp117.write_config(conversion_mode = TMP117_CONFIG_FLAG_MOD_ONESHOT, 
-                conversion_cycle = 2, conversion_averaging = TMP117_CONFIG_FLAG_AVG_32)
+            print(f"info: Writing boot mode: {args.mode}, average: {args.average} samples, cycle mode: {args.cycle}")
+            mode = TMP117_CONFIG_FLAG_MOD_SHUTDOWN
+            if(args.mode == "continuous"):
+                mode = TMP117_CONFIG_FLAG_MOD_CONT
+            avg = TMP117_CONFIG_FLAG_AVG_8
+            if(args.average == 1):
+                avg = TMP117_CONFIG_FLAG_AVG_NONE
+            elif(args.average == 32):
+                avg = TMP117_CONFIG_FLAG_AVG_32
+            elif(args.average == 64):
+                avg = TMP117_CONFIG_FLAG_AVG_64
+            tmp117.write_config(conversion_mode = mode, conversion_cycle = args.cycle, 
+                conversion_averaging = avg, eeprom_persistent = True)
+            print("info: Successfully wrote persistent configuration")
         elif(args.verb == "read"):
             if(args.mode == "oneshot"):
                 while(True):
