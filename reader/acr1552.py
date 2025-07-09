@@ -70,6 +70,7 @@ ISO_ERROR_UNSUCCESSFUL_LOCKING =            0x14
 
 class ACR1552(pcscreader.PCSCReader):
     def __init__(self):
+        self.trace = False
         super().__init__()
 
     @classmethod
@@ -186,6 +187,8 @@ class ACR1552(pcscreader.PCSCReader):
     def transmit_iso15693(self, data):
         # Transmit data in transparent NFC session with 1 second timeout
         # FWTI: 0 ~ 15, FWT/Timeout = 302.07 x 2FWTI us
+        if(self.trace):
+            print(f"trace: > {data.hex()}")
         tlv = self._transmit_pseudo(TRANS_FUNC_EXCHANGE, Tlv.build([
             (TLV_TAG_CMD_TIMEOUT, (1000000).to_bytes(4, "big")), 
             (TLV_TAG_CMD_FWTI, TLV_TAG_CMD_FWTI_PREFIX + bytes([ 15 ])),
@@ -197,4 +200,6 @@ class ACR1552(pcscreader.PCSCReader):
         # Check for inner protocol errors
         self._check_iso15693_error(data)
         # Strip flags
+        if(self.trace):
+            print(f"trace: < {data.hex()}")
         return data[1:]
