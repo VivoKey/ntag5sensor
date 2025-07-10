@@ -348,7 +348,7 @@ class NTAG5Link(ISO15693):
             raise Exception("Block data must be four bytes")
         self.reader.transmit_iso15693(
             bytes([ISO_FLAG_DATA_RATE, NXP_CMD_WRITE_CONFIG, NXP_CMD_MANUF_CODE_NXP, 
-                address]) + block_data)
+                address]) + block_data, True)
 
     def write_config0(self, auto_standby_mode_en = False, lock_session_reg = False,
             eh_mode = NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH, sram_copy_en = False):
@@ -389,8 +389,8 @@ class NTAG5Link(ISO15693):
             (NXP_CONFIG_2_GPIO1_SLEW_RATE if gpio1_slew_rate_fast else 0x00) |
             (NXP_CONFIG_2_LOCK_BLOCK_COMMAND_SUPPORTED if lock_block_supported else 0x00) |
             (NXP_CONFIG_2_EXTENDED_COMMANDS_SUPPORTED if extended_commands_supported else 0x00) |
-            gpio0_pad_in |
-            gpio1_pad_in
+            gpio0_in |
+            gpio1_in
         )
         self.write_config_block(NXP_CONFIG_ADDR_CONFIG, bytes(config))
 

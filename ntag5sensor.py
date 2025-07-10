@@ -5,6 +5,7 @@ import time, sys
 from reader.acr1552 import ACR1552
 from vicinity.ntag5link import *
 from vicinity.tmp117 import *
+from vicinity.si1143 import *
 
 from cli import argparser, display
 
@@ -82,22 +83,16 @@ if __name__ == "__main__":
         # Setup chip for energy harvesting and I2C transfer
         # These write command work despite the reader claiming they timed out (TODO: investigate)
         print("info: Writing persistent configuration")
-        try:
-            print("info: Writing CONFIG_0 defaults, except low field strength energy harvesting mode")
-            chip.write_config0(eh_mode = NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH)
-            print("info: Writing CONFIG_1 defaults, except SRAM enable, I2C master mode")
-            chip.write_config1(sram_enable = True, use_case = NXP_CONFIG_1_USE_CASE_CONF_I2C_MASTER)
-            print("info: Writing CONFIG_2 defaults, except GPIO 0 and GPIO 1 disable")
-            chip.write_config2(gpio0_in = NXP_CONFIG_2_GPIO0_PAD_IN_DISABLED, gpio1_in = NXP_CONFIG_2_GPIO1_PAD_IN_DISABLED)
-        except Exception as e:
-            print(f"warning: Possibly failed to write CONFIG_1, ignoring error: {e}")
-        try:
-            print(f"info: Writing output voltage: {args.voltage} V, energy harvesting trigger current: {args.current} mA")
-            chip.write_eh_ed_config(current = I_SEL_CLI.get(args.current, NXP_EH_CONFIG_EH_VOUT_I_SEL_0_4), 
-                voltage = V_SEL_CLI.get(args.voltage, NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8))
-        except Exception as e:
-            print(f"warning: Possibly failed to write EH_CONFIG, ignoring error: {e}")
-        print("If the configuration has changed, power-cycle the chip once now")
+        print("info: Writing CONFIG_0 defaults, except low field strength energy harvesting mode")
+        chip.write_config0(eh_mode = NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH)
+        print("info: Writing CONFIG_1 defaults, except SRAM enable, I2C master mode")
+        chip.write_config1(sram_enable = True, use_case = NXP_CONFIG_1_USE_CASE_CONF_I2C_MASTER)
+        print("info: Writing CONFIG_2 defaults, except GPIO 0 and GPIO 1 disable")
+        chip.write_config2(gpio0_in = NXP_CONFIG_2_GPIO0_PAD_IN_DISABLED, gpio1_in = NXP_CONFIG_2_GPIO1_PAD_IN_DISABLED)
+        print(f"info: Writing output voltage: {args.voltage} V, energy harvesting trigger current: {args.current} mA")
+        chip.write_eh_ed_config(current = I_SEL_CLI.get(args.current, NXP_EH_CONFIG_EH_VOUT_I_SEL_0_4), 
+            voltage = V_SEL_CLI.get(args.voltage, NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8))
+        print("warning: If the configuration has changed, power-cycle the chip once now")
 
     elif(args.action == "tmp117"):
         # Start energy harvesting
@@ -171,7 +166,7 @@ if __name__ == "__main__":
 
         # Connect to attached SI1143 sensor
         print("info: Connecting to SI1143 sensor")
-        si1143 = SI1143(chip, args.address)
+        si1143 = SI1143(chip)
 
         # Start the sensor
         si1143.initialize()

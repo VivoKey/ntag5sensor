@@ -110,12 +110,12 @@ class ACR1552(pcscreader.PCSCReader):
         # End transparent NFC session
         self._transmit_pseudo(TRANS_FUNC_MANAGE, MANAGE_END_TRANSPARENT_SESSION)
 
-    def _check_pseudo_error(self, error):
+    def _check_pseudo_error(self, error, allow_no_response = False):
         # Check the inner response of the pseudo APDU
         bad_data, sw1, sw2 = error
         code = (sw1, sw2)
         if bad_data == 0x00 and code == PCSC_SUCCESS:
-            return
+            return True
         messages = {
             PCSC_ERROR_UNAVAILABLE_INFORMATION: "Data object XX warning, requested information not available",
             PCSC_ERROR_NO_INFORMATION: "No information",
@@ -127,13 +127,18 @@ class ACR1552(pcscreader.PCSCReader):
             PCSC_EXECUTION_ERROR_ICC: "Data object XX execution error (no response from ICC)",
             PCSC_DATA_OBJECT_FAILED: "Data object XX failed, no precise diagnosis",
         }
-        message = messages.get(code)
-        if message:
-            raise Exception(message.replace("XX", str(bad_data)))
-        else:
-            raise Exception(f"Unknown error: 0x{error.hex()}")
 
-    def _transmit_pseudo(self, function, data):
+        message = messages.get(code)
+        if(allow_no_response and code == PCSC_EXECUTION_ERROR_ICC):
+            print(f"warning: Ignoring error: {message}")
+            return False
+        else:
+            if message:
+                raise Exception(message.replace("XX", str(bad_data)))
+            else:
+                raise Exception(f"Unknown error: 0x{error.hex()}")
+
+    def _transmit_pseudo(self, function, data, allow_no_response = False):
         # Send command data TLV as pseudo PCSC APDU
         res = self.transmit_pcsc(bytes([CLA_PSEUDO, INS_TRANS, 
             0x00, function, 
@@ -141,8 +146,10 @@ class ACR1552(pcscreader.PCSCReader):
         # Parse PCSC response as TLV
         tlv = dict(Tlv.parse(res))
         error = tlv[TLV_TAG_ERROR]
-        self._check_pseudo_error(error)
-        return tlv
+        if(self._check_pseudo_error(error, allow_no_response)):
+            return tlv
+        else:
+            return None
 
     def _check_transmit_error(self, status):
         # Check the response status field
@@ -184,7 +191,7 @@ class ACR1552(pcscreader.PCSCReader):
         else:
             raise Exception(f"Reserved for future use (RFU) code {data[1]:02x}")
 
-    def transmit_iso15693(self, data):
+    def transmit_iso15693(self, data, allow_no_response = False):
         # Transmit data in transparent NFC session with 1 second timeout
         # FWTI: 0 ~ 15, FWT/Timeout = 302.07 x 2FWTI us
         if(self.trace):
@@ -192,14 +199,17 @@ class ACR1552(pcscreader.PCSCReader):
         tlv = self._transmit_pseudo(TRANS_FUNC_EXCHANGE, Tlv.build([
             (TLV_TAG_CMD_TIMEOUT, (1000000).to_bytes(4, "big")), 
             (TLV_TAG_CMD_FWTI, TLV_TAG_CMD_FWTI_PREFIX + bytes([ 15 ])),
-            (TLV_TAG_CMD_DATA, bytes(data))]))
-        # Byte 0 is response status code, byte 1 is RFU
-        self._check_transmit_error(tlv[TLV_TAG_RESP_STATUS][0])
-        self._check_transmit_framing(tlv[TLV_TAG_RESP_FRAMING][0])
-        data = tlv[TLV_TAG_RESP_DATA]
-        # Check for inner protocol errors
-        self._check_iso15693_error(data)
-        # Strip flags
-        if(self.trace):
-            print(f"trace: < {data.hex()}")
-        return data[1:]
+            (TLV_TAG_CMD_DATA, bytes(data))]), allow_no_response)
+        if(tlv != None):
+            # Byte 0 is response status code, byte 1 is RFU
+            self._check_transmit_error(tlv[TLV_TAG_RESP_STATUS][0])
+            self._check_transmit_framing(tlv[TLV_TAG_RESP_FRAMING][0])
+            data = tlv[TLV_TAG_RESP_DATA]
+            # Check for inner protocol errors
+            self._check_iso15693_error(data)
+            # Strip flags
+            if(self.trace):
+                print(f"trace: < {data.hex()}")
+            return data[1:]
+        else:
+            return b''

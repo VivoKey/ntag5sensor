@@ -91,7 +91,7 @@ def print_eh_ed_config_info(config):
         print(f" - Energy harvesting output voltage: {config["eh_vout_v_sel"]} V")
     if("disable_power_check" in config):
         state = "disabled" if config["disable_power_check"] else "enabled"
-        print(f"  - Energy harvesting power check: {state}")
+        print(f" - Energy harvesting power check: {state}")
     if("ed_config" in config):
         print(f" - Energy detection config: {config["ed_config"].replace("_", " ").capitalize()}")
 
@@ -132,9 +132,9 @@ def print_tmp117_eeprom_info(info):
         print(f" - Revision: {dev["rev"]}")
 
 def print_si1143_info(info):
-    if("part_id" in config):
+    if("part_id" in info):
         print(f" - Part ID: {info["part_id"]}")
-    if("rev_id" in config):
+    if("rev_id" in info):
         print(f" - Revision ID: {info["rev_id"]}")
-    if("seq_id" in config):
+    if("seq_id" in info):
         print(f" - Sequencer ID: {info["seq_id"]}")

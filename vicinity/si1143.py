@@ -121,15 +121,15 @@ class SI1143:
         res["rev_id"] = self.read_register(SI1143_I2C_REG_REV_ID)
         
         seq_id = self.read_register(SI1143_I2C_REG_SEQ_ID)
-        if(seq_id == SI1143_SEQ_ID_A01)
+        if(seq_id == SI1143_SEQ_ID_A01):
             res["seq_id"] = "Si114x-A01"
-        elif(seq_id == SI1143_SEQ_ID_A02)
+        elif(seq_id == SI1143_SEQ_ID_A02):
             res["seq_id"] = "Si114x-A02"
-        elif(seq_id == SI1143_SEQ_ID_A03)
+        elif(seq_id == SI1143_SEQ_ID_A03):
             res["seq_id"] = "Si114x-A03"
-        elif(seq_id == SI1143_SEQ_ID_A10)
+        elif(seq_id == SI1143_SEQ_ID_A10):
             res["seq_id"] = "Si114x-A10"
-        elif(seq_id == SI1143_SEQ_ID_A11)
+        elif(seq_id == SI1143_SEQ_ID_A11):
             res["seq_id"] = "Si114x-A11"
         else:
             res["seq_id"] = "Unknown"
