@@ -130,3 +130,11 @@ def print_tmp117_eeprom_info(info):
         dev = info["device_id"]
         print(f" - Device ID: 0x{dev["id"]:03x}")
         print(f" - Revision: {dev["rev"]}")
+
+def print_si1143_info(info):
+    if("part_id" in config):
+        print(f" - Part ID: {info["part_id"]}")
+    if("rev_id" in config):
+        print(f" - Revision ID: {info["rev_id"]}")
+    if("seq_id" in config):
+        print(f" - Sequencer ID: {info["seq_id"]}")

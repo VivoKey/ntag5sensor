@@ -29,6 +29,17 @@ V_SEL_CLI = {
 }
 
 
+def start_eh(chip):
+    # Start energy harvesting
+    print("info: Triggering energy harvesting")
+    chip.eh_control(trigger = True, enable = False)
+    while(not chip.check_eh_load_ok()):
+        print("info: Waiting for energy harvesting load stabilization")
+        time.sleep(0.1)
+    print("info: Energy harvesting load is stable, enabling")
+    chip.eh_control(trigger = True, enable = True)
+    print("info: Energy harvesting active")
+
 if __name__ == "__main__":
     parser, args = argparser.parse()
     argparser.validate(parser, args)
@@ -90,14 +101,7 @@ if __name__ == "__main__":
 
     elif(args.action == "tmp117"):
         # Start energy harvesting
-        print("info: Triggering energy harvesting")
-        chip.eh_control(trigger = True, enable = False)
-        while(not chip.check_eh_load_ok()):
-            print("info: Waiting for energy harvesting load stabilization")
-            time.sleep(0.1)
-        print("info: Energy harvesting load is stable, enabling")
-        chip.eh_control(trigger = True, enable = True)
-        print("info: Energy harvesting active")
+        start_eh(chip)
 
         # Connect to attached TMP117 sensor
         print("info: Connecting to TMP117 sensor")
@@ -108,7 +112,7 @@ if __name__ == "__main__":
             print("info: Persistent TMP117 configuration:")
             tmp117_config_info = tmp117.get_config_info()
             display.print_tmp117_config_info(tmp117_config_info)
-            # Display other EEPROm fields of TMP117
+            # Display other EEPROM fields of TMP117
             print("info: Other persistent TMP117 EEPROM content:")
             tmp117_eeprom_info = tmp117.get_eeprom_info()
             display.print_tmp117_eeprom_info(tmp117_eeprom_info)
@@ -160,6 +164,23 @@ if __name__ == "__main__":
                             print(f"info: Temperature is {reading:.3f} °C, {display.celsius_to_fahrenheit(reading):.3f} °F")
                     except KeyboardInterrupt:
                         break
+
+    elif(args.action == "si1143"):
+        # Start energy harvesting
+        start_eh(chip)
+
+        # Connect to attached SI1143 sensor
+        print("info: Connecting to SI1143 sensor")
+        si1143 = SI1143(chip, args.address)
+
+        # Start the sensor
+        si1143.initialize()
+
+        if(args.verb == "info"):
+            # Display SI1143 info
+            print("info: SI1143 information:")
+            si1143_info = si1143.get_info()
+            display.print_si1143_info(si1143_info)
 
     # Disconnect tag 
     acr.disconnect()

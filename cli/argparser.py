@@ -82,9 +82,20 @@ def parse():
         parents=[parser_handle_interface, parser_handle_sensor_interface, parser_handle_tmp117], 
         help='read measurement data from the connected TMP117 sensor')
 
+
+    # SI1143 action
+    parser_si1143 = actions.add_parser('si1143', help='manage connected SI1143 sensor')
+    subparsers_si1143 = parser_si1143.add_subparsers(
+        help='desired action to perform on the connected SI1143 sensor', 
+        dest='verb', required=True) 
+
+    # TMP117 INFO action
+    parser_si1143_info = subparsers_si1143.add_parser('info', 
+        parents=[parser_handle_interface], 
+        help='read information and configuration of the connected SI1143 sensor')
+
     args = parser.parse_args()
     return (parser, args)
-
 
 def validate(parser, args):
     if(args.documentation):
