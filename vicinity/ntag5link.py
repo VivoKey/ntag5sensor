@@ -355,10 +355,12 @@ class NTAG5Link(ISO15693):
         # Read the existing config page
         config = list(self.read_config_block(NXP_CONFIG_ADDR_CONFIG))
         # Construct new CONFIG_0 and update page
-        config[0] = (NXP_CONFIG_0_AUTO_STANDBY_MODE_EN if auto_standby_mode_en else 0x00) | \
-            (NXP_CONFIG_0_LOCK_SESSION_REG if lock_session_reg else 0x00) | \
-            eh_mode | \
+        config[0] = (
+            (NXP_CONFIG_0_AUTO_STANDBY_MODE_EN if auto_standby_mode_en else 0x00) |
+            (NXP_CONFIG_0_LOCK_SESSION_REG if lock_session_reg else 0x00) |
+            eh_mode |
             (NXP_CONFIG_0_SRAM_COPY_EN if sram_copy_en else 0x00)
+        )
         self.write_config_block(NXP_CONFIG_ADDR_CONFIG, bytes(config))
 
     def write_config1(self, transfer_dir_inverse = False, sram_enable = False, 
@@ -367,10 +369,29 @@ class NTAG5Link(ISO15693):
         # Read the existing config page
         config = list(self.read_config_block(NXP_CONFIG_ADDR_CONFIG))
         # Construct new CONFIG_1 and update page
-        config[1] = (NXP_CONFIG_1_PT_TRANSFER_DIR if transfer_dir_inverse else 0x00) | \
-            (NXP_CONFIG_1_SRAM_ENABLE if sram_enable else 0x00) | \
-            arbiter_mode | use_case | \
+        config[1] = (
+            (NXP_CONFIG_1_PT_TRANSFER_DIR if transfer_dir_inverse else 0x00) |
+            (NXP_CONFIG_1_SRAM_ENABLE if sram_enable else 0x00) |
+            arbiter_mode |
+            use_case |
             (NXP_CONFIG_1_EH_ARBITER_MODE_EN if arbiter_mode_en else 0x00)
+        )
+        self.write_config_block(NXP_CONFIG_ADDR_CONFIG, bytes(config))
+
+    def write_config2(self, gpio0_slew_rate_fast=True, gpio1_slew_rate_fast=True,
+            lock_block_supported=True, extended_commands_supported=True,
+            gpio0_in=NXP_CONFIG_2_GPIO0_PAD_IN_PLAIN_PULLDOWN, gpio1_in=NXP_CONFIG_2_GPIO1_PAD_IN_PLAIN_PULLDOWN):
+        # Read the existing config block
+        config = list(self.read_config_block(NXP_CONFIG_ADDR_CONFIG))
+        # Construct new CONFIG_2 byte
+        config[2] = (
+            (NXP_CONFIG_2_GPIO0_SLEW_RATE if gpio0_slew_rate_fast else 0x00) |
+            (NXP_CONFIG_2_GPIO1_SLEW_RATE if gpio1_slew_rate_fast else 0x00) |
+            (NXP_CONFIG_2_LOCK_BLOCK_COMMAND_SUPPORTED if lock_block_supported else 0x00) |
+            (NXP_CONFIG_2_EXTENDED_COMMANDS_SUPPORTED if extended_commands_supported else 0x00) |
+            gpio0_pad_in |
+            gpio1_pad_in
+        )
         self.write_config_block(NXP_CONFIG_ADDR_CONFIG, bytes(config))
 
     def write_eh_ed_config(self, enable = False, disable_power_check = False, 
