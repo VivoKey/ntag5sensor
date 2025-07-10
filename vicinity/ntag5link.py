@@ -21,8 +21,11 @@ NXP_CONFIG_ADDR_EH_CONFIG =                     0x3D
 # Config flags
 NXP_CONFIG_0_AUTO_STANDBY_MODE_EN =             (1 << 0)
 NXP_CONFIG_0_LOCK_SESSION_REG =                 (1 << 1)
+NXP_CONFIG_0_EH_MODE_RFU0 =                     (0 << 2)
+NXP_CONFIG_0_EH_MODE_RFU1 =                     (1 << 2)
 NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH =       (2 << 2)
 NXP_CONFIG_0_EH_MODE_HIGH_FIELD_STRENGTH =      (3 << 2)
+NXP_CONFIG_0_SRAM_COPY_EN =                     (1 << 7)
 
 NXP_CONFIG_1_PT_TRANSFER_DIR =                  (1 << 0)
 NXP_CONFIG_1_SRAM_ENABLE =                      (1 << 1)
@@ -227,13 +230,17 @@ class NTAG5Link(ISO15693):
         res["auto_standby_mode_enabled"] = bool(b0 & NXP_CONFIG_0_AUTO_STANDBY_MODE_EN)
         res["lock_session_register"] = bool(b0 & NXP_CONFIG_0_LOCK_SESSION_REG)
 
-        eh_mode = b0 & (NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH | NXP_CONFIG_0_EH_MODE_HIGH_FIELD_STRENGTH)
+        eh_mode = b0 & NXP_CONFIG_0_EH_MODE_HIGH_FIELD_STRENGTH # mask includes all eh mode bits
         if eh_mode == NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH:
             res["energy_harvesting_mode"] = "low_field_strength"
         elif eh_mode == NXP_CONFIG_0_EH_MODE_HIGH_FIELD_STRENGTH:
             res["energy_harvesting_mode"] = "high_field_strength"
-        else:
-            res["energy_harvesting_mode"] = "disabled_or_reserved"
+        elif eh_mode == NXP_CONFIG_0_EH_MODE_RFU0:
+            res["energy_harvesting_mode"] = "rfu0"
+        elif eh_mode == NXP_CONFIG_0_EH_MODE_RFU1:
+            res["energy_harvesting_mode"] = "rfu1"
+        
+        res["sram_copy_enabled"] = bool(b0 & NXP_CONFIG_0_SRAM_COPY_EN)
 
         # Byte 1
         res["pt_transfer_direction"] = "reader_to_tag" if (b1 & NXP_CONFIG_1_PT_TRANSFER_DIR) else "tag_to_reader"

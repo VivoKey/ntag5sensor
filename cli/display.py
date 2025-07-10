@@ -54,6 +54,8 @@ def print_config_info(info):
         print(f" - Session register locked: {info["lock_session_register"]}")
     if("energy_harvesting_mode" in info):
         print(f" - Energy harvesting mode: {info["energy_harvesting_mode"]}")
+    if("sram_copy_enabled" in info):
+        print(f" - SRAM copy on POR enabled: {info["sram_copy_enabled"]}")
 
     if("pt_transfer_direction" in info):
         print(f" - Pass-through transfer direction: {info["pt_transfer_direction"]}")
