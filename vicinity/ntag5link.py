@@ -350,6 +350,17 @@ class NTAG5Link(ISO15693):
             bytes([ISO_FLAG_DATA_RATE, NXP_CMD_WRITE_CONFIG, NXP_CMD_MANUF_CODE_NXP, 
                 address]) + block_data)
 
+    def write_config0(self, auto_standby_mode_en = False, lock_session_reg = False,
+            eh_mode = NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH, sram_copy_en = False):
+        # Read the existing config page
+        config = list(self.read_config_block(NXP_CONFIG_ADDR_CONFIG))
+        # Construct new CONFIG_0 and update page
+        config[0] = (NXP_CONFIG_0_AUTO_STANDBY_MODE_EN if auto_standby_mode_en else 0x00) | \
+            (NXP_CONFIG_0_LOCK_SESSION_REG if lock_session_reg else 0x00) | \
+            eh_mode | \
+            (NXP_CONFIG_0_SRAM_COPY_EN if sram_copy_en else 0x00)
+        self.write_config_block(NXP_CONFIG_ADDR_CONFIG, bytes(config))
+
     def write_config1(self, transfer_dir_inverse = False, sram_enable = False, 
             arbiter_mode = NXP_CONFIG_1_ARBITER_MODE_NORMAL, use_case = NXP_CONFIG_1_USE_CASE_CONF_I2C_SLAVE, 
             arbiter_mode_en = False):
