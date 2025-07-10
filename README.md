@@ -93,19 +93,21 @@ options:
                         Print the complete help documentation
   -l, --list-readers    list available ACR1552 readers
 
-usage: ntag5sensor.py info [-h] [-r [READER]]
+usage: ntag5sensor.py info [-h] [-r [READER]] [-t]
 
 options:
   -h, --help            show this help message and exit
   -r, --reader [READER]
                         index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
 
-usage: ntag5sensor.py setup [-h] [-r [READER]] [-c [{0.4,0.6,1.4,2.7,4.0,6.5,9.0,12.5}]] [-v [{1.8,2.4,3.0}]]
+usage: ntag5sensor.py setup [-h] [-r [READER]] [-t] [-c [{0.4,0.6,1.4,2.7,4.0,6.5,9.0,12.5}]] [-v [{1.8,2.4,3.0}]]
 
 options:
   -h, --help            show this help message and exit
   -r, --reader [READER]
                         index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
   -c, --current [{0.4,0.6,1.4,2.7,4.0,6.5,9.0,12.5}]
                         minimum available current for energy harvesting to trigger, in mA (default: 0.4)
   -v, --voltage [{1.8,2.4,3.0}]
@@ -122,21 +124,23 @@ positional arguments:
 options:
   -h, --help         show this help message and exit
 
-usage: ntag5sensor.py tmp117 info [-h] [-r [READER]] [-a [{72,73,74,75}]]
+usage: ntag5sensor.py tmp117 info [-h] [-r [READER]] [-t] [-a [{72,73,74,75}]]
 
 options:
   -h, --help            show this help message and exit
   -r, --reader [READER]
                         index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
   -a, --address [{72,73,74,75}]
                         I2C address of the connected sensor chip (default: 72)
 
-usage: ntag5sensor.py tmp117 setup [-h] [-r [READER]] [-a [{72,73,74,75}]] [-mo [{oneshot,continuous}]] [-av [{1,8,32,64}]] [-cy [{0,1,2,3,4,5,6,7}]]
+usage: ntag5sensor.py tmp117 setup [-h] [-r [READER]] [-t] [-a [{72,73,74,75}]] [-mo [{oneshot,continuous}]] [-av [{1,8,32,64}]] [-cy [{0,1,2,3,4,5,6,7}]]
 
 options:
   -h, --help            show this help message and exit
   -r, --reader [READER]
                         index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
   -a, --address [{72,73,74,75}]
                         I2C address of the connected sensor chip (default: 72)
   -mo, --mode [{oneshot,continuous}]
@@ -146,12 +150,13 @@ options:
   -cy, --cycle [{0,1,2,3,4,5,6,7}]
                         Cycle timing mode in continuous mode, see table 7-7 (default: 4)
 
-usage: ntag5sensor.py tmp117 read [-h] [-r [READER]] [-a [{72,73,74,75}]] [-mo [{oneshot,continuous}]]
+usage: ntag5sensor.py tmp117 read [-h] [-r [READER]] [-t] [-a [{72,73,74,75}]] [-mo [{oneshot,continuous}]]
 
 options:
   -h, --help            show this help message and exit
   -r, --reader [READER]
                         index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
   -a, --address [{72,73,74,75}]
                         I2C address of the connected sensor chip (default: 72)
   -mo, --mode [{oneshot,continuous}]

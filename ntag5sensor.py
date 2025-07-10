@@ -43,7 +43,7 @@ if __name__ == "__main__":
    
     # Connect to chip on specified reader
     acr = ACR1552.cli_create_connect(args)
-    acr.trace = True
+    acr.trace = args.trace
     chip = NTAG5Link(acr)
 
     # Perform selected action

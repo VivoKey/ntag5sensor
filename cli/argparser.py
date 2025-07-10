@@ -16,6 +16,8 @@ def parse():
     parser_handle_interface.add_argument("-r", "--reader", nargs="?", dest="reader", type=int, 
         const=0, default=0, required=False, 
         help="index of the available ACR1552 readers to use (default: 0)")
+    parser_handle_interface.add_argument("-t", "--trace", action="store_true", dest="trace", 
+        help="trace all raw ISO15693 communication")
     
     # Persistent configuration options
     parser_handle_config = argparse.ArgumentParser(add_help=False)
