@@ -72,8 +72,12 @@ if __name__ == "__main__":
         # These write command work despite the reader claiming they timed out (TODO: investigate)
         print("info: Writing persistent configuration")
         try:
-            print("info: Writing baseline: SRAM enable, I2C master mode")
+            print("info: Writing CONFIG_0 defaults, except low field strength energy harvesting mode")
+            chip.write_config0(eh_mode = NXP_CONFIG_0_EH_MODE_LOW_FIELD_STRENGTH)
+            print("info: Writing CONFIG_1 defaults, except SRAM enable, I2C master mode")
             chip.write_config1(sram_enable = True, use_case = NXP_CONFIG_1_USE_CASE_CONF_I2C_MASTER)
+            print("info: Writing CONFIG_2 defaults, except GPIO 0 and GPIO 1 disable")
+            chip.write_config2(gpio0_in = NXP_CONFIG_2_GPIO0_PAD_IN_DISABLED, gpio1_in = NXP_CONFIG_2_GPIO1_PAD_IN_DISABLED)
         except Exception as e:
             print(f"warning: Possibly failed to write CONFIG_1, ignoring error: {e}")
         try:
