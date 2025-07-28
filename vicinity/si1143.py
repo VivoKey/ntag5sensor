@@ -1,4 +1,5 @@
 import time
+from .i2cbase import I2CBase
 
 SI1143_I2C_ADDRESS =                0x5A
 
@@ -49,9 +50,6 @@ SI1143_I2C_REG_ANA_IN_KEY1 =        0x3C
 SI1143_I2C_REG_ANA_IN_KEY2 =        0x3D
 SI1143_I2C_REG_ANA_IN_KEY3 =        0x3E
 
-# Reset command
-SI1143_I2C_CALL_RESET_CMD =         0x06
-
 # Part IDs
 SI1143_PART_ID_SI1141 =             0x41
 SI1143_PART_ID_SI1142 =             0x42
@@ -68,37 +66,9 @@ SI1143_SEQ_ID_A11 =                 0x09
 SI1143_HW_KEY_VALUE =               0x17
 
 
-class SI1143:
+class SI1143(I2CBase):
     def __init__(self, ntag5link):
-        self.chip = ntag5link
-
-    def read_register(self, register):
-        while(self.chip.check_i2c_busy()):
-            print("info: I2C bus is still busy, waiting ...")
-            time.sleep(0.1)
-        self.chip.write_i2c(SI1143_I2C_ADDRESS, bytes([register]))
-        if(not self.chip.check_i2c_write_result()):
-            raise Exception("Register address write was not acknowledged")
-        self.chip.read_i2c(SI1143_I2C_ADDRESS, 1)
-        data = self.chip.read_sram()
-        return data[0]
-
-    def write_register(self, register, data):
-        while(self.chip.check_i2c_busy()):
-            print("info: I2C bus is still busy, waiting ...")
-            time.sleep(0.1)
-        self.chip.write_i2c(SI1143_I2C_ADDRESS, bytes([register] + data))
-        if(not self.chip.check_i2c_write_result()):
-            raise Exception("Register address and data write was not acknowledged")
-
-    def general_reset(self):
-        # Perform I2C General-Call Reset
-        while(self.chip.check_i2c_busy()):
-            print("info: I2C bus is still busy, waiting ...")
-            time.sleep(0.1)
-        self.chip.write_i2c(0x00, bytes([SI1143_I2C_CALL_RESET_CMD]))
-        if(not self.chip.check_i2c_write_result()):
-            raise Exception("General call was not acknowledged")
+        super().__init__(ntag5link, SI1143_I2C_ADDRESS)
 
     def initialize(self):
         # The hardware key register is needed to transition to standby mode
@@ -108,7 +78,7 @@ class SI1143:
         res = {}
 
         # Part, revision and sequencer information
-        part_id = self.read_register(SI1143_I2C_REG_PART_ID)
+        part_id = self.read_register(SI1143_I2C_REG_PART_ID, 1)
         if(part_id == SI1143_PART_ID_SI1141):
             res["part_id"] = "Si1141"
         elif(part_id == SI1143_PART_ID_SI1142):
@@ -118,9 +88,9 @@ class SI1143:
         else:
             res["part_id"] = "Unknown"
         
-        res["rev_id"] = self.read_register(SI1143_I2C_REG_REV_ID)
+        res["rev_id"] = self.read_register(SI1143_I2C_REG_REV_ID, 1)
         
-        seq_id = self.read_register(SI1143_I2C_REG_SEQ_ID)
+        seq_id = self.read_register(SI1143_I2C_REG_SEQ_ID, 1)
         if(seq_id == SI1143_SEQ_ID_A01):
             res["seq_id"] = "Si114x-A01"
         elif(seq_id == SI1143_SEQ_ID_A02):

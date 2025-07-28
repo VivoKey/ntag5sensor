@@ -1,4 +1,5 @@
 import time
+from .i2cbase import I2CBase
 
 # Register addresses
 TMP117_I2C_REG_TEMP_RESULT =        0x00
@@ -11,9 +12,6 @@ TMP117_I2C_REG_EEPROM2 =            0x06
 TMP117_I2C_REG_TEMP_OFFSET =        0x07
 TMP117_I2C_REG_EEPROM3 =            0x08
 TMP117_I2C_REG_DEVICE_ID =          0x0F
-
-# Reset command
-TMP117_I2C_CALL_RESET_CMD =         0x06
 
 # Config register flags
 TMP117_CONFIG_FLAG_SOFT_RESET =     (1 << 1)
@@ -49,44 +47,15 @@ TMP117_EEPROM_UL_EUN =              (1 << 15)
 TMP117_EEPROM_UL_EEPROM_BUSY =      (1 << 14)
 
 
-class TMP117:
+class TMP117(I2CBase):
     def __init__(self, ntag5link, address):
-        self.chip = ntag5link
-        self.address = address
+        super().__init__(ntag5link, address)
 
     def raw_to_celsius(self, data):
         return (int.from_bytes(data, byteorder = "big", signed = True) * 7.8125) / 1000.0
 
-    def read_register(self, register):
-        while(self.chip.check_i2c_busy()):
-            print("info: I2C bus is still busy, waiting ...")
-            time.sleep(0.1)
-        self.chip.write_i2c(self.address, bytes([register]))
-        if(not self.chip.check_i2c_write_result()):
-            raise Exception("Register address write was not acknowledged")
-        self.chip.read_i2c(self.address, 2)
-        data = self.chip.read_sram()
-        return data[0:2]
-
-    def write_register(self, register, data):
-        while(self.chip.check_i2c_busy()):
-            print("info: I2C bus is still busy, waiting ...")
-            time.sleep(0.1)
-        self.chip.write_i2c(self.address, bytes([register] + data))
-        if(not self.chip.check_i2c_write_result()):
-            raise Exception("Register address and data write was not acknowledged")
-
-    def general_reset(self):
-        # Perform I2C General-Call Reset
-        while(self.chip.check_i2c_busy()):
-            print("info: I2C bus is still busy, waiting ...")
-            time.sleep(0.1)
-        self.chip.write_i2c(0x00, bytes([TMP117_I2C_CALL_RESET_CMD]))
-        if(not self.chip.check_i2c_write_result()):
-            raise Exception("General call was not acknowledged")
-
     def get_config_info(self):
-        config = self.read_register(TMP117_I2C_REG_CONFIG)
+        config = self.read_register(TMP117_I2C_REG_CONFIG, 2)
         config = int.from_bytes(config[0:2], byteorder="big")
 
         res = {}
@@ -167,13 +136,13 @@ class TMP117:
     def get_eeprom_info(self):
         ret = {}
 
-        ret["thigh_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_THIGH_LIMIT))
-        ret["tlow_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TLOW_LIMIT))
-        ret["eeprom1"] = self.read_register(TMP117_I2C_REG_EEPROM1)
-        ret["eeprom2"] = self.read_register(TMP117_I2C_REG_EEPROM2)
-        ret["eeprom3"] = self.read_register(TMP117_I2C_REG_EEPROM3)
-        ret["temperature_offset"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TEMP_OFFSET))
-        device_id = self.read_register(TMP117_I2C_REG_DEVICE_ID)
+        ret["thigh_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_THIGH_LIMIT, 2))
+        ret["tlow_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TLOW_LIMIT, 2))
+        ret["eeprom1"] = self.read_register(TMP117_I2C_REG_EEPROM1, 2)
+        ret["eeprom2"] = self.read_register(TMP117_I2C_REG_EEPROM2, 2)
+        ret["eeprom3"] = self.read_register(TMP117_I2C_REG_EEPROM3, 2)
+        ret["temperature_offset"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TEMP_OFFSET, 2))
+        device_id = self.read_register(TMP117_I2C_REG_DEVICE_ID, 2)
         device_id = int.from_bytes(device_id[0:2], byteorder="big")
         ret["device_id"] = {
             "id": device_id & TMP117_DEVICE_ID_DID_MASK,
@@ -185,7 +154,7 @@ class TMP117:
     def write_config(self, eeprom_persistent = False, conversion_mode = None, 
             conversion_cycle = None, conversion_averaging = None):
         # Read current values
-        config = self.read_register(TMP117_I2C_REG_CONFIG)
+        config = self.read_register(TMP117_I2C_REG_CONFIG, 2)
         config = int.from_bytes(config[0:2], byteorder="big")
         
         # Apply new parameters
@@ -210,7 +179,7 @@ class TMP117:
             # Wait for EEPROM write to complete
             while(True):
                 # Check EEPROM busy flag
-                eeprom_ul = self.read_register(TMP117_I2C_REG_EEPROM_UL)
+                eeprom_ul = self.read_register(TMP117_I2C_REG_EEPROM_UL, 2)
                 eeprom_ul = int.from_bytes(eeprom_ul[0:2], byteorder="big")
                 if(eeprom_ul & TMP117_EEPROM_UL_EEPROM_BUSY == 0):
                     print("info: EEPROM writing completed")
@@ -220,16 +189,16 @@ class TMP117:
             # Reset the chip
             self.general_reset()
             # Read the changed values
-            config_new = self.read_register(TMP117_I2C_REG_CONFIG)
+            config_new = self.read_register(TMP117_I2C_REG_CONFIG, 2)
             config_new = int.from_bytes(config_new[0:2], byteorder="big")
             if(config_new != config):
                 raise Exception("Could not confirm EEPROM changes after reset")
 
     def read_temperature(self):
-        config = self.read_register(TMP117_I2C_REG_CONFIG)
+        config = self.read_register(TMP117_I2C_REG_CONFIG, 2)
         config = int.from_bytes(config[0:2], byteorder="big")
         if(bool(config & TMP117_CONFIG_FLAG_DATA_READY)):
-            data = self.read_register(TMP117_I2C_REG_TEMP_RESULT)
+            data = self.read_register(TMP117_I2C_REG_TEMP_RESULT, 2)
             return self.raw_to_celsius(data)
         else:
             # Caller should try again, no data ready yet

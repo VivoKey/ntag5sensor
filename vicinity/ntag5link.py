@@ -1,6 +1,5 @@
 from .iso15693 import *
 
-
 # Command codes
 NXP_CMD_SYSTEM_INFO =                           0xAB
 NXP_CMD_READ_CONFIG =                           0xC0
