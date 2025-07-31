@@ -131,25 +131,24 @@ class TMP117(I2CBase):
         # Reset flag
         res["soft_reset"] = bool(config & TMP117_CONFIG_FLAG_SOFT_RESET)
 
-        return res
+        # More EEPROM info
+        res["thigh_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_THIGH_LIMIT, 2))
+        res["tlow_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TLOW_LIMIT, 2))
 
-    def get_eeprom_info(self):
-        ret = {}
+        res["eeprom1"] = self.read_register(TMP117_I2C_REG_EEPROM1, 2)
+        res["eeprom2"] = self.read_register(TMP117_I2C_REG_EEPROM2, 2)
+        res["eeprom3"] = self.read_register(TMP117_I2C_REG_EEPROM3, 2)
 
-        ret["thigh_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_THIGH_LIMIT, 2))
-        ret["tlow_limit"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TLOW_LIMIT, 2))
-        ret["eeprom1"] = self.read_register(TMP117_I2C_REG_EEPROM1, 2)
-        ret["eeprom2"] = self.read_register(TMP117_I2C_REG_EEPROM2, 2)
-        ret["eeprom3"] = self.read_register(TMP117_I2C_REG_EEPROM3, 2)
-        ret["temperature_offset"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TEMP_OFFSET, 2))
+        res["temperature_offset"] = self.raw_to_celsius(self.read_register(TMP117_I2C_REG_TEMP_OFFSET, 2))
+
         device_id = self.read_register(TMP117_I2C_REG_DEVICE_ID, 2)
         device_id = int.from_bytes(device_id[0:2], byteorder="big")
-        ret["device_id"] = {
+        res["device_id"] = {
             "id": device_id & TMP117_DEVICE_ID_DID_MASK,
             "rev": (device_id & TMP117_DEVICE_ID_REV_MASK) >> 12
         }
 
-        return ret
+        return res
             
     def write_config(self, eeprom_persistent = False, conversion_mode = None, 
             conversion_cycle = None, conversion_averaging = None):

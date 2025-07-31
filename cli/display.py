@@ -113,8 +113,6 @@ def print_tmp117_config_info(info):
         print(f"   - Alert pin selection: {"Data ready flag" if info["alert_config"].get("alert_select_data_ready") else "Alert flags"}")
     if("soft_reset" in info):
         print(f" - Soft reset pending: {"Yes" if info["soft_reset"] else "No"}")
-
-def print_tmp117_eeprom_info(info):
     if("thigh_limit" in info):
         print(f" - High temperature alert limit: {info["thigh_limit"]:.3f} °C")
     if("tlow_limit" in info):

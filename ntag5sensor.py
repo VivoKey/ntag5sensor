@@ -5,6 +5,7 @@ import time, sys
 from reader.acr1552 import ACR1552
 from vicinity.ntag5link import *
 from vicinity.tmp117 import *
+from vicinity.tmp112 import *
 from vicinity.si1143 import *
 
 from cli import argparser, display
@@ -107,10 +108,6 @@ if __name__ == "__main__":
             print("info: Persistent TMP117 configuration:")
             tmp117_config_info = tmp117.get_config_info()
             display.print_tmp117_config_info(tmp117_config_info)
-            # Display other EEPROM fields of TMP117
-            print("info: Other persistent TMP117 EEPROM content:")
-            tmp117_eeprom_info = tmp117.get_eeprom_info()
-            display.print_tmp117_eeprom_info(tmp117_eeprom_info)
 
         elif(args.verb == "setup"):
             # Write supplied config options to TMP117 config EEPROM
