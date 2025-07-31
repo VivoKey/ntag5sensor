@@ -1,6 +1,6 @@
 # NTAG 5 Sensor
 
-Sensor reading for the `NXP NTAG 5 Link` using the `ACS ACR1552U` PC/SC reader. Supported sensors include the `TI TMP117`, `TI TMP112`, and `SL SI1143` sensors.
+Sensor reading for the `NXP NTAG 5 Link` using the `ACS ACR1552U` PC/SC reader. Supported sensors are the `TI TMP117`, `TI TMP112` (also compatible with the `TI TMP102`), and `SL SI1143` sensors.
 
 For development hardware, use e.g. the MikroElektronika [NTAG 5 Link Click](https://www.mikroe.com/ntag-5-link-click), [Thermo 11 Click](https://www.mikroe.com/thermo-11-click), and [Proximity 10 Click](https://www.mikroe.com/proximity-10-click) boards.
 
@@ -30,9 +30,9 @@ The script will automatically enumerate all connected compatible ACR ACR1552U re
 
 Afterwards, select the index of the reader you want to use (if it is not the default 0 one), by using the `-r` flag.
 
-### TMP11X I2C address
+### Temperature sensor I2C address
 
-You need to specify the I2C address of the connected TMP11X chip if it is not the default one, by using the `-a` flag. This address is determined by the ADD0 pin connection of the TMP11X chip.
+You need to specify the I2C address of the connected TMP chip if it is not the default one, by using the `-a` flag. This address is determined by the ADD0 pin connection of the TMP chip.
 
 ADD0 connection and the resulting I2C address:
  - `GND` (default): `72` (e.g. [MikroElektronika Thermo 11 Click](https://www.mikroe.com/thermo-11-click))
@@ -77,16 +77,17 @@ Finally, you can read out the measurements from the sensor. This step is the onl
 ### Command reference
 
 ```
-usage: ntag5sensor.py [-h] [-hd] [-l] {info,setup,tmp117,si1143} ...
+usage: ntag5sensor.py [-h] [-hd] [-l] {info,setup,tmp117,tmp112,si1143} ...
 
 Read and configure sensors connected to NTAG 5 Link
 
 positional arguments:
-  {info,setup,tmp117,si1143}
+  {info,setup,tmp117,tmp112,si1143}
                         desired action to perform
     info                read information and configuration data of the NTAG5 Link
     setup               write persistent configuration settings into the NTAG5 Link EEPROM
     tmp117              manage connected TMP117 sensor
+    tmp112              manage connected TMP117 sensor
     si1143              manage connected SI1143 sensor
 
 options:
@@ -153,6 +154,38 @@ options:
                         Cycle timing mode in continuous mode, see table 7-7 (default: 4)
 
 usage: ntag5sensor.py tmp117 read [-h] [-r [READER]] [-t] [-a [{72,73,74,75}]] [-mo [{oneshot,continuous}]]
+
+options:
+  -h, --help            show this help message and exit
+  -r, --reader [READER]
+                        index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
+  -a, --address [{72,73,74,75}]
+                        I2C address of the connected sensor chip (default: 72)
+  -mo, --mode [{oneshot,continuous}]
+                        Mode to operate the connected sensor chip in (default: oneshot)
+
+usage: ntag5sensor.py tmp112 [-h] {info,read} ...
+
+positional arguments:
+  {info,read}  desired action to perform on the connected TMP117 sensor
+    info       read information and configuration of the connected TMP112 sensor
+    read       read measurement data from the connected TMP112 sensor
+
+options:
+  -h, --help   show this help message and exit
+
+usage: ntag5sensor.py tmp112 info [-h] [-r [READER]] [-t] [-a [{72,73,74,75}]]
+
+options:
+  -h, --help            show this help message and exit
+  -r, --reader [READER]
+                        index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
+  -a, --address [{72,73,74,75}]
+                        I2C address of the connected sensor chip (default: 72)
+
+usage: ntag5sensor.py tmp112 read [-h] [-r [READER]] [-t] [-a [{72,73,74,75}]] [-mo [{oneshot,continuous}]]
 
 options:
   -h, --help            show this help message and exit
