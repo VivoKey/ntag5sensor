@@ -160,6 +160,52 @@ if __name__ == "__main__":
                     except KeyboardInterrupt:
                         break
 
+    elif(args.action == "tmp112"):
+        # Start energy harvesting
+        start_eh(chip)
+
+        # Connect to attached TMP112 sensor
+        print("info: Connecting to TMP112 sensor")
+        tmp112 = TMP112(chip, args.address)
+
+        if(args.verb == "info"):
+            # Display TMP112 config
+            print("info: TMP112 configuration:")
+            tmp112_config_info = tmp112.get_config_info()
+            display.print_tmp112_config_info(tmp112_config_info)
+
+        elif(args.verb == "read"):
+            # Sample temperature data from the sensor
+            if(args.mode == "oneshot"):
+                # In oneshot mode, manually trigger conversions
+                tmp112.write_config(shutdown_mode = True, oneshot = False)
+                while(True):
+                    try:
+                        print("info: Triggering oneshot measurement")
+                        tmp112.write_config(oneshot = True)
+                        # Poll for data available
+                        while(True):
+                            reading = tmp112.read_temperature()
+                            if(reading != None):
+                                print(f"info: Temperature is {reading:.3f} °C, {display.celsius_to_fahrenheit(reading):.3f} °F")
+                                break
+                        print("info: Waiting for 2 seconds")
+                        time.sleep(2)
+                    except KeyboardInterrupt:
+                        break
+            elif(args.mode == "continuous"):
+                print("info: Running in continuous measurement mode")
+                tmp112.write_config(shutdown_mode = False, oneshot = False)
+                # In continuous mode, just poll for data available
+                while(True):
+                    try:
+                        reading = tmp112.read_temperature()
+                        if(reading != None):
+                            print(f"info: Temperature is {reading:.3f} °C, {display.celsius_to_fahrenheit(reading):.3f} °F")
+                            time.sleep(0.1)
+                    except KeyboardInterrupt:
+                        break
+
     elif(args.action == "si1143"):
         # Start energy harvesting
         start_eh(chip)

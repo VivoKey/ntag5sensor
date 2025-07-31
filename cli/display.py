@@ -131,6 +131,33 @@ def print_tmp117_eeprom_info(info):
         print(f" - Device ID: 0x{dev["id"]:03x}")
         print(f" - Revision: {dev["rev"]}")
 
+def print_tmp112_config_info(info):
+    if("shutdown_mode" in info):
+        print(f" - Shutdown mode: {info["shutdown_mode"]}")
+    if("thermostat_mode" in info):
+        print(f" - Thermostat mode: {info["thermostat_mode"]}")
+    if("extended_mode" in info):
+        print(f" - Extended mode: {info["extended_mode"]}")
+    if("oneshot" in info):
+        print(f" - Oneshot done: {info["oneshot"]}")
+
+    if("alert" in info):
+        print(f" - Alert: {info["alert"]}")
+    if("alert_polarity_high" in info):
+        print(f" - Alert polarity: {"High" if info["alert_polarity_high"] else "Low"}")
+    if("fault_queue" in info):
+        print(f" - Fault queue length: {info["fault_queue"]}")
+
+    if("conversion_rate" in info):
+        print(f" - Conversion rate: {info["conversion_rate"]}")
+    if("resolution" in info):
+        print(f" - Resolution: {info["resolution"]}")
+
+    if("thigh_limit" in info):
+        print(f" - High temperature alert limit: {info["thigh_limit"]:.3f} °C")
+    if("tlow_limit" in info):
+        print(f" - Low temperature alert limit: {info["tlow_limit"]:.3f} °C")
+
 def print_si1143_info(info):
     if("part_id" in info):
         print(f" - Part ID: {info["part_id"]}")

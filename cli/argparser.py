@@ -34,9 +34,9 @@ def parse():
         const=72, default=72, choices=[72, 73, 74, 75], 
         help="I2C address of the connected sensor chip (default: 72)")
 
-    # TMP117 general options
-    parser_handle_tmp117 = argparse.ArgumentParser(add_help=False)
-    parser_handle_tmp117.add_argument("-mo", "--mode", nargs="?", dest="mode", type=str, 
+    # TMP general options
+    parser_handle_tmp = argparse.ArgumentParser(add_help=False)
+    parser_handle_tmp.add_argument("-mo", "--mode", nargs="?", dest="mode", type=str, 
         const="oneshot", default="oneshot", choices=["oneshot", "continuous"], 
         help="Mode to operate the connected sensor chip in (default: oneshot)")
 
@@ -74,13 +74,30 @@ def parse():
 
     # TMP117 SETUP action
     parser_tmp117_info = subparsers_tmp117.add_parser('setup', 
-        parents=[parser_handle_interface, parser_handle_sensor_interface, parser_handle_tmp117, parser_handle_tmp117_settings], 
+        parents=[parser_handle_interface, parser_handle_sensor_interface, parser_handle_tmp, parser_handle_tmp117_settings], 
         help='write persistent configuration to the connected TMP117 sensor')
 
     # TMP117 READ action
     parser_tmp117_info = subparsers_tmp117.add_parser('read', 
-        parents=[parser_handle_interface, parser_handle_sensor_interface, parser_handle_tmp117], 
+        parents=[parser_handle_interface, parser_handle_sensor_interface, parser_handle_tmp], 
         help='read measurement data from the connected TMP117 sensor')
+
+
+    # TMP112 action
+    parser_tmp112 = actions.add_parser('tmp112', help='manage connected TMP117 sensor')
+    parser_tmp112 = parser_tmp112.add_subparsers(
+        help='desired action to perform on the connected TMP117 sensor', 
+        dest='verb', required=True) 
+
+    # TMP117 INFO action
+    parser_tmp112_info = parser_tmp112.add_parser('info', 
+        parents=[parser_handle_interface, parser_handle_sensor_interface], 
+        help='read information and configuration of the connected TMP112 sensor')
+
+    # TMP117 READ action
+    parser_tmp112_info = parser_tmp112.add_parser('read', 
+        parents=[parser_handle_interface, parser_handle_sensor_interface, parser_handle_tmp], 
+        help='read measurement data from the connected TMP112 sensor')
 
 
     # SI1143 action
@@ -89,7 +106,7 @@ def parse():
         help='desired action to perform on the connected SI1143 sensor', 
         dest='verb', required=True) 
 
-    # TMP117 INFO action
+    # SI1143 INFO action
     parser_si1143_info = subparsers_si1143.add_parser('info', 
         parents=[parser_handle_interface], 
         help='read information and configuration of the connected SI1143 sensor')
