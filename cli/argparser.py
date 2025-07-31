@@ -84,9 +84,9 @@ def parse():
 
 
     # TMP112 action
-    parser_tmp112 = actions.add_parser('tmp112', help='manage connected TMP117 sensor')
+    parser_tmp112 = actions.add_parser('tmp112', help='manage connected TMP112 sensor')
     parser_tmp112 = parser_tmp112.add_subparsers(
-        help='desired action to perform on the connected TMP117 sensor', 
+        help='desired action to perform on the connected TMP112 sensor', 
         dest='verb', required=True) 
 
     # TMP117 INFO action

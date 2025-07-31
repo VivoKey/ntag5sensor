@@ -87,7 +87,7 @@ positional arguments:
     info                read information and configuration data of the NTAG5 Link
     setup               write persistent configuration settings into the NTAG5 Link EEPROM
     tmp117              manage connected TMP117 sensor
-    tmp112              manage connected TMP117 sensor
+    tmp112              manage connected TMP112 sensor
     si1143              manage connected SI1143 sensor
 
 options:
@@ -168,7 +168,7 @@ options:
 usage: ntag5sensor.py tmp112 [-h] {info,read} ...
 
 positional arguments:
-  {info,read}  desired action to perform on the connected TMP117 sensor
+  {info,read}  desired action to perform on the connected TMP112 sensor
     info       read information and configuration of the connected TMP112 sensor
     read       read measurement data from the connected TMP112 sensor
 
