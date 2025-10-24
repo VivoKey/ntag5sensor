@@ -78,7 +78,7 @@ class SI1143(I2CBase):
         res = {}
 
         # Part, revision and sequencer information
-        part_id = self.read_register(SI1143_I2C_REG_PART_ID, 1)
+        part_id = self.read_register(SI1143_I2C_REG_PART_ID, 1)[0]
         if(part_id == SI1143_PART_ID_SI1141):
             res["part_id"] = "Si1141"
         elif(part_id == SI1143_PART_ID_SI1142):
@@ -88,9 +88,9 @@ class SI1143(I2CBase):
         else:
             res["part_id"] = "Unknown"
         
-        res["rev_id"] = self.read_register(SI1143_I2C_REG_REV_ID, 1)
+        res["rev_id"] = self.read_register(SI1143_I2C_REG_REV_ID, 1)[0]
         
-        seq_id = self.read_register(SI1143_I2C_REG_SEQ_ID, 1)
+        seq_id = self.read_register(SI1143_I2C_REG_SEQ_ID, 1)[0]
         if(seq_id == SI1143_SEQ_ID_A01):
             res["seq_id"] = "Si114x-A01"
         elif(seq_id == SI1143_SEQ_ID_A02):
