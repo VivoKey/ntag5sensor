@@ -107,9 +107,14 @@ def parse():
         dest='verb', required=True) 
 
     # SI1143 INFO action
-    parser_si1143_info = subparsers_si1143.add_parser('info', 
-        parents=[parser_handle_interface], 
+    parser_si1143_info = subparsers_si1143.add_parser('info',
+        parents=[parser_handle_interface],
         help='read information and configuration of the connected SI1143 sensor')
+
+    # SI1143 READ action
+    parser_si1143_read = subparsers_si1143.add_parser('read',
+        parents=[parser_handle_interface],
+        help='read measurement data from the connected SI1143 sensor')
 
     args = parser.parse_args()
     return (parser, args)

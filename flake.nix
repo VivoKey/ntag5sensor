@@ -13,11 +13,19 @@
       devShell.x86_64-linux =
         pkgs.mkShell {
           shellHook = ''
+            export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins"
+            export QT_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins"
           '';
 
           buildInputs = with pkgs; [
+            qt5.qtbase
+            qt5.qtx11extras
+            xorg.libX11
+            xorg.libxcb
             (python3.withPackages (ps: with ps; [
               pyscard
+              pyqt5
+              pyqtgraph
               (buildPythonPackage rec {
                 pname = "ber-tlv";
                 version = "0.0.6";
