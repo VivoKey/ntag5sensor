@@ -3,8 +3,8 @@
 import time, sys
 from collections import deque
 
-from PyQt5 import QtWidgets
-import pyqtgraph as pg
+#from PyQt5 import QtWidgets
+#import pyqtgraph as pg
 
 from reader.acr1552 import ACR1552
 from vicinity.ntag5link import *
@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
             # Setup measurement rate
             si1143.write_register(SI1143_I2C_REG_MEAS_RATE, 
-                [SI1143_DEV_WAKEUP_MYSTERY])
+                [SI1143_DEV_WAKEUP_EVERY_10MS])
             si1143.write_register(SI1143_I2C_REG_ALS_RATE, 
                 [SI1143_MEAS_AFTER_EVERY_WAKEUP])
             si1143.write_register(SI1143_I2C_REG_PS_RATE,
@@ -274,29 +274,29 @@ if __name__ == "__main__":
             # Read sensor measurements continuously
             print("info: Reading SI1143 sensor data")
 
-            # Show a QT window
-            app = QtWidgets.QApplication(sys.argv)
-            win = pg.GraphicsLayoutWidget(show=True, title="Realtime Heartbeat")
-            plot = win.addPlot(labels={'left': 'Value', 'bottom': 'Samples'})
-            plot.addLegend()
-            plot.showGrid(x=True, y=True, alpha=0.3)
-            plot.enableAutoRange('y', True)
+            # # Show a QT window
+            # app = QtWidgets.QApplication(sys.argv)
+            # win = pg.GraphicsLayoutWidget(show=True, title="Realtime Heartbeat")
+            # plot = win.addPlot(labels={'left': 'Value', 'bottom': 'Samples'})
+            # plot.addLegend()
+            # plot.showGrid(x=True, y=True, alpha=0.3)
+            # plot.enableAutoRange('y', True)
 
-            # Display options
-            show_raw = True
-            show_smooth = False
+            # # Display options
+            # show_raw = True
+            # show_smooth = False
 
-            # Two curves for PS1 raw and smoothed
-            curve_ps1_raw = plot.plot(pen=pg.mkPen(color='red', width=1), name="PS1 Raw")
-            curve_ps1_smooth = plot.plot(pen=pg.mkPen(color='blue', width=2), name="PS1 Smooth")
+            # # Two curves for PS1 raw and smoothed
+            # curve_ps1_raw = plot.plot(pen=pg.mkPen(color='red', width=1), name="PS1 Raw")
+            # curve_ps1_smooth = plot.plot(pen=pg.mkPen(color='blue', width=2), name="PS1 Smooth")
 
-            BUFFER_SIZE = 200
-            ps1_raw_buf = deque(maxlen=BUFFER_SIZE)
-            ps1_smooth_buf = deque(maxlen=BUFFER_SIZE)
-            ps1_mean_buf = deque(maxlen=5)  # Buffer for 5-sample mean calculation
+            # BUFFER_SIZE = 200
+            # ps1_raw_buf = deque(maxlen=BUFFER_SIZE)
+            # ps1_smooth_buf = deque(maxlen=BUFFER_SIZE)
+            # ps1_mean_buf = deque(maxlen=5)  # Buffer for 5-sample mean calculation
 
-            # Use a mutable object to track sample count
-            counters = {'sample_count': 0}
+            # # Use a mutable object to track sample count
+            # counters = {'sample_count': 0}
 
             def update():
                 try:
@@ -306,57 +306,65 @@ if __name__ == "__main__":
                     # irq = si1143.read_register(SI1143_I2C_REG_IRQ_STATUS, 1)[0]
                     # print(irq)
 
-                    data = si1143.read_register(SI1143_I2C_REG_ALS_VIS_DATA0, 12)
+                    #data = si1143.read_register(SI1143_I2C_REG_ALS_VIS_DATA0, 12)
 
-                    als_vis_data = int.from_bytes(data[0:2],  byteorder="little", signed=False)
-                    als_ir_data  = int.from_bytes(data[2:4],  byteorder="little", signed=False)
-                    ps1_data     = int.from_bytes(data[4:6],  byteorder="little", signed=False)
-                    ps2_data     = int.from_bytes(data[6:8],  byteorder="little", signed=False)
-                    ps3_data     = int.from_bytes(data[8:10], byteorder="little", signed=False)
-                    aux_data     = int.from_bytes(data[10:12], byteorder="little", signed=False)
+                    # als_vis_data = int.from_bytes(data[0:2],  byteorder="little", signed=False)
+                    # als_ir_data  = int.from_bytes(data[2:4],  byteorder="little", signed=False)
+                    # ps1_data     = int.from_bytes(data[4:6],  byteorder="little", signed=False)
+                    # ps2_data     = int.from_bytes(data[6:8],  byteorder="little", signed=False)
+                    # ps3_data     = int.from_bytes(data[8:10], byteorder="little", signed=False)
+                    # aux_data     = int.from_bytes(data[10:12], byteorder="little", signed=False)
 
-                    # Add raw value to mean calculation buffer
-                    ps1_mean_buf.append(ps1_data)
+                    data = si1143.read_register(SI1143_I2C_REG_PS1_DATA0, 2)
+                    ps1_data = int.from_bytes(data,  byteorder="little", signed=False)
+                    print(ps1_data)
 
-                    # Calculate 5-sample mean
-                    ps1_mean = sum(ps1_mean_buf) / len(ps1_mean_buf)
+                    # # Add raw value to mean calculation buffer
+                    # ps1_mean_buf.append(ps1_data)
 
-                    # Append to display buffers
-                    ps1_raw_buf.append(ps1_data)
-                    ps1_smooth_buf.append(ps1_mean)
+                    # # Calculate 5-sample mean
+                    # ps1_mean = sum(ps1_mean_buf) / len(ps1_mean_buf)
 
-                    counters['sample_count'] += 1
+                    # # Append to display buffers
+                    # ps1_raw_buf.append(ps1_data)
+                    # ps1_smooth_buf.append(ps1_mean)
 
-                    # Create x-axis that matches the actual buffer length
-                    buffer_length = len(ps1_raw_buf)
-                    x = list(range(counters['sample_count'] - buffer_length, counters['sample_count']))
+                    # counters['sample_count'] += 1
 
-                    # Update curves based on display options
-                    if show_raw:
-                        curve_ps1_raw.setData(x, list(ps1_raw_buf))
-                    else:
-                        curve_ps1_raw.setData([], [])
+                    # # Create x-axis that matches the actual buffer length
+                    # buffer_length = len(ps1_raw_buf)
+                    # x = list(range(counters['sample_count'] - buffer_length, counters['sample_count']))
 
-                    if show_smooth:
-                        curve_ps1_smooth.setData(x, list(ps1_smooth_buf))
-                    else:
-                        curve_ps1_smooth.setData([], [])
+                    # # Update curves based on display options
+                    # if show_raw:
+                    #     curve_ps1_raw.setData(x, list(ps1_raw_buf))
+                    # else:
+                    #     curve_ps1_raw.setData([], [])
+
+                    # if show_smooth:
+                    #     curve_ps1_smooth.setData(x, list(ps1_smooth_buf))
+                    # else:
+                    #     curve_ps1_smooth.setData([], [])
 
                     # Optional: console log
-                    print(
-                        f"\rALS_VIS:{als_vis_data} ALS_IR:{als_ir_data} "
-                        f"PS1:{ps1_data} PS2:{ps2_data} PS3:{ps3_data} AUX:{aux_data}   ",
-                        end=""
-                    )
+                    # print(
+                    #     f"\rALS_VIS:{als_vis_data} ALS_IR:{als_ir_data} "
+                    #     f"PS1:{ps1_data} PS2:{ps2_data} PS3:{ps3_data} AUX:{aux_data}   ",
+                    #     end=""
+                    # )
                 except Exception as e:
+                    pass
                     # Avoid crashing the UI on occasional read errors
-                    print(f"\nwarn: sensor read failed: {e}")
+                    #print(f"\nwarn: sensor read failed: {e}")
 
-            timer = pg.QtCore.QTimer()
-            timer.timeout.connect(update)
-            timer.start(0)  # Maximum possible sample rate
+            # timer = pg.QtCore.QTimer()
+            # timer.timeout.connect(update)
+            # timer.start(0)  # Maximum possible sample rate
 
-            sys.exit(app.exec_())
+            # sys.exit(app.exec_())
+
+            while(True):
+                update()
             
     # Disconnect tag 
     acr.disconnect()
