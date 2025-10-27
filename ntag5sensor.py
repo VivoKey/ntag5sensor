@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
             # Setup measurement rate
             si1143.write_register(SI1143_I2C_REG_MEAS_RATE, 
-                [SI1143_DEV_WAKEUP_EVERY_10MS])
+                [0x94])
             si1143.write_register(SI1143_I2C_REG_ALS_RATE, 
                 [SI1143_MEAS_AFTER_EVERY_WAKEUP])
             si1143.write_register(SI1143_I2C_REG_PS_RATE,
@@ -298,23 +298,12 @@ if __name__ == "__main__":
             # # Use a mutable object to track sample count
             # counters = {'sample_count': 0}
 
-            def update():
+            target_period = 0.02  # 20ms for 50 Hz
+
+            while(True):
+                loop_start = time.time()
+
                 try:
-                    # Read 12 bytes covering ALS/IR/PS1/PS2/PS3/AUX
-                    #si1143.command(SI1143_CMD_PS_FORCE)
-                    # Wait for interrupt pin to be set
-                    # irq = si1143.read_register(SI1143_I2C_REG_IRQ_STATUS, 1)[0]
-                    # print(irq)
-
-                    #data = si1143.read_register(SI1143_I2C_REG_ALS_VIS_DATA0, 12)
-
-                    # als_vis_data = int.from_bytes(data[0:2],  byteorder="little", signed=False)
-                    # als_ir_data  = int.from_bytes(data[2:4],  byteorder="little", signed=False)
-                    # ps1_data     = int.from_bytes(data[4:6],  byteorder="little", signed=False)
-                    # ps2_data     = int.from_bytes(data[6:8],  byteorder="little", signed=False)
-                    # ps3_data     = int.from_bytes(data[8:10], byteorder="little", signed=False)
-                    # aux_data     = int.from_bytes(data[10:12], byteorder="little", signed=False)
-
                     data = si1143.read_register(SI1143_I2C_REG_PS1_DATA0, 2)
                     ps1_data = int.from_bytes(data,  byteorder="little", signed=False)
                     print(ps1_data)
@@ -357,14 +346,17 @@ if __name__ == "__main__":
                     # Avoid crashing the UI on occasional read errors
                     #print(f"\nwarn: sensor read failed: {e}")
 
+                # Calculate elapsed time and delay to maintain 50 Hz
+                loop_elapsed = time.time() - loop_start
+                sleep_time = target_period - loop_elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+
             # timer = pg.QtCore.QTimer()
             # timer.timeout.connect(update)
             # timer.start(0)  # Maximum possible sample rate
 
             # sys.exit(app.exec_())
-
-            while(True):
-                update()
             
     # Disconnect tag 
     acr.disconnect()
