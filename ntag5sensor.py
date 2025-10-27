@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "PyQt5",
+#     "pyqtgraph",
+#     "pyscard",
+#     "ber-tlv"
+# ]
+# ///
 
 import time, sys
 from collections import deque
