@@ -43,6 +43,27 @@
                   setuptools
                 ];
               })
+              (buildPythonPackage rec {
+                pname = "heartpy";
+                version = "1.2.7";
+
+                src = fetchPypi {
+                  inherit pname version;
+                  sha256 = "sha256-AfFU8zC30iH3m3N4+2UZ42R1c8QnRifyn5m7Vp10SR4=";
+                };
+
+                doCheck = true;
+
+                propagatedBuildInputs = [
+                  setuptools
+                  numpy
+                  scipy
+                  matplotlib
+                  cycler
+                  kiwisolver
+                  pyparsing
+                ];
+              })
             ]))
           ];
         };

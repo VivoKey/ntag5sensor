@@ -12,8 +12,10 @@
 import time, sys
 from collections import deque
 
-#from PyQt5 import QtWidgets
-#import pyqtgraph as pg
+from PyQt5 import QtWidgets
+import pyqtgraph as pg
+import heartpy
+import numpy as np
 
 from reader.acr1552 import ACR1552
 from vicinity.ntag5link import *
@@ -283,31 +285,45 @@ if __name__ == "__main__":
             # Read sensor measurements continuously
             print("info: Reading SI1143 sensor data")
 
-            # # Show a QT window
-            # app = QtWidgets.QApplication(sys.argv)
-            # win = pg.GraphicsLayoutWidget(show=True, title="Realtime Heartbeat")
-            # plot = win.addPlot(labels={'left': 'Value', 'bottom': 'Samples'})
-            # plot.addLegend()
-            # plot.showGrid(x=True, y=True, alpha=0.3)
-            # plot.enableAutoRange('y', True)
+            # Show a QT window
+            app = QtWidgets.QApplication(sys.argv)
+            win = pg.GraphicsLayoutWidget(show=True, title="Realtime Heartbeat")
+            plot = win.addPlot(labels={'left': 'Value', 'bottom': 'Samples'})
+            plot.addLegend()
+            plot.showGrid(x=True, y=True, alpha=0.3)
+            plot.enableAutoRange('xy', True)
 
-            # # Display options
-            # show_raw = True
-            # show_smooth = False
+            # Display options
+            show_raw = True
+            show_smooth = False
+            show_hr = True
 
-            # # Two curves for PS1 raw and smoothed
-            # curve_ps1_raw = plot.plot(pen=pg.mkPen(color='red', width=1), name="PS1 Raw")
-            # curve_ps1_smooth = plot.plot(pen=pg.mkPen(color='blue', width=2), name="PS1 Smooth")
+            # Two curves for PS1 raw and smoothed
+            curve_ps1_raw = plot.plot(pen=pg.mkPen(color='red', width=1), name="PS1 Raw")
+            curve_ps1_smooth = plot.plot(pen=pg.mkPen(color='blue', width=2), name="PS1 Smooth")
 
-            # BUFFER_SIZE = 200
-            # ps1_raw_buf = deque(maxlen=BUFFER_SIZE)
-            # ps1_smooth_buf = deque(maxlen=BUFFER_SIZE)
-            # ps1_mean_buf = deque(maxlen=5)  # Buffer for 5-sample mean calculation
+            BUFFER_SIZE = 1000
+            ps1_raw_buf = deque(maxlen=BUFFER_SIZE)
+            ps1_smooth_buf = deque(maxlen=BUFFER_SIZE)
+            ps1_mean_buf = deque(maxlen=5)  # Buffer for 5-sample mean calculation
 
-            # # Use a mutable object to track sample count
-            # counters = {'sample_count': 0}
+            # Use a mutable object to track sample count
+            counters = {'sample_count': 0}
+
+            # Heart rate display
+            current_bpm = 0.0
+            hr_text = pg.TextItem(f"BPM: {current_bpm:.1f}", color='white', anchor=(0, 1))
+            plot.addItem(hr_text)
+            hr_text.setPos(10, plot.getViewBox().viewRange()[1][1])
 
             target_period = 0.02  # 20ms for 50 Hz
+            sample_rate = 50  # Hz
+
+            # Heartpy processing variables
+            ppg_buffer = deque(maxlen=500)  # Buffer for 10 seconds at 50Hz
+            last_hr_computation = time.time()
+            hr_computation_interval = 5.0  # Compute HR every 5 seconds
+            min_samples_for_hr = 150  # Minimum 3 seconds of data for HR calculation
 
             while(True):
                 loop_start = time.time()
@@ -315,41 +331,76 @@ if __name__ == "__main__":
                 try:
                     data = si1143.read_register(SI1143_I2C_REG_PS1_DATA0, 2)
                     ps1_data = int.from_bytes(data,  byteorder="little", signed=False)
-                    print(ps1_data)
 
-                    # # Add raw value to mean calculation buffer
-                    # ps1_mean_buf.append(ps1_data)
+                    # Add data to buffer for heart rate processing
+                    ppg_buffer.append(ps1_data)
 
-                    # # Calculate 5-sample mean
-                    # ps1_mean = sum(ps1_mean_buf) / len(ps1_mean_buf)
+                    # Add raw value to mean calculation buffer
+                    ps1_mean_buf.append(ps1_data)
 
-                    # # Append to display buffers
-                    # ps1_raw_buf.append(ps1_data)
-                    # ps1_smooth_buf.append(ps1_mean)
+                    # Calculate 5-sample mean
+                    ps1_mean = sum(ps1_mean_buf) / len(ps1_mean_buf)
 
-                    # counters['sample_count'] += 1
+                    # Append to display buffers
+                    ps1_raw_buf.append(ps1_data)
+                    ps1_smooth_buf.append(ps1_mean)
 
-                    # # Create x-axis that matches the actual buffer length
-                    # buffer_length = len(ps1_raw_buf)
-                    # x = list(range(counters['sample_count'] - buffer_length, counters['sample_count']))
+                    counters['sample_count'] += 1
 
-                    # # Update curves based on display options
-                    # if show_raw:
-                    #     curve_ps1_raw.setData(x, list(ps1_raw_buf))
-                    # else:
-                    #     curve_ps1_raw.setData([], [])
+                    # Create x-axis that starts from 0 and matches the actual buffer length
+                    buffer_length = len(ps1_raw_buf)
+                    x = list(range(buffer_length))
 
-                    # if show_smooth:
-                    #     curve_ps1_smooth.setData(x, list(ps1_smooth_buf))
-                    # else:
-                    #     curve_ps1_smooth.setData([], [])
+                    # Update curves based on display options
+                    if show_raw:
+                        curve_ps1_raw.setData(x, list(ps1_raw_buf))
+                    else:
+                        curve_ps1_raw.setData([], [])
 
-                    # Optional: console log
-                    # print(
-                    #     f"\rALS_VIS:{als_vis_data} ALS_IR:{als_ir_data} "
-                    #     f"PS1:{ps1_data} PS2:{ps2_data} PS3:{ps3_data} AUX:{aux_data}   ",
-                    #     end=""
-                    # )
+                    if show_smooth:
+                        curve_ps1_smooth.setData(x, list(ps1_smooth_buf))
+                    else:
+                        curve_ps1_smooth.setData([], [])
+
+                    # Process Qt events to update the GUI
+                    app.processEvents()
+
+                    # Periodic heart rate computation
+                    current_time = time.time()
+                    if (current_time - last_hr_computation >= hr_computation_interval and
+                        len(ppg_buffer) >= min_samples_for_hr):
+
+                        try:
+                            # Convert buffer to numpy array and scale data
+                            ppg_data = np.array(list(ppg_buffer), dtype=float)
+                            scaled_data = heartpy.scale_data(ppg_data)
+
+                            # Process with HeartPy
+                            working_data, measures = heartpy.process(
+                                scaled_data,
+                                sample_rate,
+                                report_time=False
+                            )
+
+                            # Update heart rate display
+                            current_bpm = measures['bpm']
+                            hr_text.setText(f"BPM: {current_bpm:.1f}")
+                            hr_text.setPos(10, plot.getViewBox().viewRange()[1][1] - 20)
+
+                            # Display heart rate results
+                            print(f"\n--- Heart Rate Analysis ---")
+                            print(f"BPM: {measures['bpm']:.2f}")
+                            print(f"IBI: {measures['ibi']:.2f} ms")
+                            print(f"SDNN: {measures['sdnn']:.2f} ms")
+                            print(f"RMSSD: {measures['rmssd']:.2f} ms")
+                            print(f"Peaks detected: {len(working_data['peaklist'])}")
+                            print("--- End Analysis ---\n")
+
+                        except Exception as e:
+                            print(f"Heart rate analysis failed: {e}")
+
+                        last_hr_computation = current_time
+
                 except Exception as e:
                     pass
                     # Avoid crashing the UI on occasional read errors
@@ -361,10 +412,7 @@ if __name__ == "__main__":
                 if sleep_time > 0:
                     time.sleep(sleep_time)
 
-            # timer = pg.QtCore.QTimer()
-            # timer.timeout.connect(update)
-            # timer.start(0)  # Maximum possible sample rate
-
+            # Start Qt event loop when done
             # sys.exit(app.exec_())
             
     # Disconnect tag 
