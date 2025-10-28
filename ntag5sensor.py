@@ -5,7 +5,9 @@
 #     "PyQt5",
 #     "pyqtgraph",
 #     "pyscard",
-#     "ber-tlv"
+#     "ber-tlv",
+#     "heartpy",
+#     "setuptools<80.9"
 # ]
 # ///
 
