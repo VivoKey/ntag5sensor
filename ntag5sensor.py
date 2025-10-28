@@ -378,8 +378,8 @@ if __name__ == "__main__":
                             ppg_data = np.array(list(ppg_buffer), dtype=float)
 
                             # Calculate sample rate using heartpy's mstimer function
-                            timestamps = np.array(list(timestamps), dtype=float)
-                            sample_rate = heartpy.get_samplerate_mstimer(timestamps * 1000.0)
+                            timerdata = np.array(list(timestamps), dtype=float) * 1000.0
+                            sample_rate = heartpy.get_samplerate_mstimer(timerdata)
 
                             # Filter out signal noise
                             filtered_data = heartpy.filter_signal(
