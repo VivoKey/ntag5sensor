@@ -319,10 +319,10 @@ if __name__ == "__main__":
             hr_text.setPos(10, plot.getViewBox().viewRange()[1][1])
 
             target_period = 0.02  # 20ms for 50 Hz
-            sample_rate = 50  # Hz
 
             # Heartpy processing variables
             ppg_buffer = deque(maxlen=500)  # Buffer for 10 seconds at 50Hz
+            timestamps = deque(maxlen=500)  # Store timestamps for each sample
             last_hr_computation = time.time()
             hr_computation_interval = 5.0  # Compute HR every 5 seconds
             min_samples_for_hr = 150  # Minimum 3 seconds of data for HR calculation
@@ -336,6 +336,7 @@ if __name__ == "__main__":
 
                     # Add data to buffer for heart rate processing
                     ppg_buffer.append(ps1_data)
+                    timestamps.append(loop_start)
 
                     # Add raw value to mean calculation buffer
                     ps1_mean_buf.append(ps1_data)
@@ -375,7 +376,22 @@ if __name__ == "__main__":
                         try:
                             # Convert buffer to numpy array and scale data
                             ppg_data = np.array(list(ppg_buffer), dtype=float)
-                            scaled_data = heartpy.scale_data(ppg_data)
+
+                            # Calculate sample rate using heartpy's mstimer function
+                            timestamps = np.array(list(timestamps), dtype=float)
+                            sample_rate = heartpy.get_samplerate_mstimer(timestamps * 1000.0)
+
+                            # Filter out signal noise
+                            filtered_data = heartpy.filter_signal(
+                                ppg_data,
+                                cutoff = [0.8, 2.5],
+                                sample_rate=sample_rate,
+                                filtertype='bandpass',
+                                order=3
+                            )
+
+                            # Scale filtered data
+                            scaled_data = heartpy.scale_data(filtered_data)
 
                             # Process with HeartPy
                             working_data, measures = heartpy.process(
