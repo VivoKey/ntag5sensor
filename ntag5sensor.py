@@ -289,38 +289,114 @@ if __name__ == "__main__":
 
             # Show a QT window
             app = QtWidgets.QApplication(sys.argv)
-            win = pg.GraphicsLayoutWidget(show=True, title="Realtime Heartbeat")
-            plot = win.addPlot(labels={'left': 'Value', 'bottom': 'Samples'})
-            plot.addLegend()
-            plot.showGrid(x=True, y=True, alpha=0.3)
-            plot.enableAutoRange('xy', True)
+
+            # Create main window with layout
+            main_widget = QtWidgets.QWidget()
+            main_widget.setWindowTitle("Realtime Heartbeat")
+            layout = QtWidgets.QVBoxLayout(main_widget)
+
+            # Channel configuration for all 6 SI1143 channels
+            # offset: byte offset in the 12-byte data chunk (each channel is 2 bytes)
+            CHANNELS = {
+                'ALS_VIS': {
+                    'offset': 0,
+                    'color': 'yellow',
+                    'name': 'ALS Visible',
+                    'show': True
+                },
+                'ALS_IR': {
+                    'offset': 2,
+                    'color': 'magenta',
+                    'name': 'ALS IR',
+                    'show': True
+                },
+                'PS1': {
+                    'offset': 4,
+                    'color': 'red',
+                    'name': 'PS1',
+                    'show': True
+                },
+                'PS2': {
+                    'offset': 6,
+                    'color': 'green',
+                    'name': 'PS2',
+                    'show': True
+                },
+                'PS3': {
+                    'offset': 8,
+                    'color': 'blue',
+                    'name': 'PS3',
+                    'show': True
+                },
+                'AUX': {
+                    'offset': 10,
+                    'color': 'white',
+                    'name': 'AUX',
+                    'show': True
+                }
+            }
+
+            # Create graph widget with multiple plots
+            graph_widget = pg.GraphicsLayoutWidget()
+
+            # Create individual plots for each channel
+            plots = {}
+            visible_channels = [ch_id for ch_id, config in CHANNELS.items() if config['show']]
+
+            for i, (channel_id, config) in enumerate(CHANNELS.items()):
+                if config['show']:
+                    if i > 0:
+                        graph_widget.nextRow()
+                    plot = graph_widget.addPlot(labels={'left': config['name'], 'bottom': 'Samples' if i == len(visible_channels)-1 else ''})
+                    plot.showGrid(x=True, y=True, alpha=0.3)
+                    plot.enableAutoRange('x', True)  # Only auto-range X, we'll handle Y manually
+                    plots[channel_id] = plot
+
+            # Create BPM label
+            bpm_label = QtWidgets.QLabel("BPM: --")
+            bpm_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;")
+
+            # Add widgets to layout
+            layout.addWidget(graph_widget)
+            layout.addWidget(bpm_label)
+
+            # Show the main widget
+            main_widget.show()
+
+            # Track if window is closed
+            window_closed = [False]
+
+            def on_window_close():
+                window_closed[0] = True
+
+            main_widget.closeEvent = lambda event: on_window_close()
 
             # Display options
             show_raw = True
-            show_smooth = False
             show_hr = True
 
-            # Two curves for PS1 raw and smoothed
-            curve_ps1_raw = plot.plot(pen=pg.mkPen(color='red', width=1), name="PS1 Raw")
-            curve_ps1_smooth = plot.plot(pen=pg.mkPen(color='blue', width=2), name="PS1 Smooth")
-
+            # Create curves and buffers for each channel
             BUFFER_SIZE = 1000
-            ps1_raw_buf = deque(maxlen=BUFFER_SIZE)
-            ps1_smooth_buf = deque(maxlen=BUFFER_SIZE)
-            ps1_mean_buf = deque(maxlen=5)  # Buffer for 5-sample mean calculation
+            channel_data = {}
+
+            for channel_id, config in CHANNELS.items():
+                if config['show']:
+                    channel_data[channel_id] = {
+                        'curve': plots[channel_id].plot(pen=pg.mkPen(color=config['color'], width=2)),
+                        'buffer': deque(maxlen=BUFFER_SIZE),
+                        'offset': config['offset'],
+                        'plot': plots[channel_id]
+                    }
 
             # Use a mutable object to track sample count
             counters = {'sample_count': 0}
 
             # Heart rate display
             current_bpm = 0.0
-            hr_text = pg.TextItem(f"BPM: {current_bpm:.1f}", color='white', anchor=(0, 1))
-            plot.addItem(hr_text)
-            hr_text.setPos(10, plot.getViewBox().viewRange()[1][1])
 
             target_period = 0.02  # 20ms for 50 Hz
 
-            # Heartpy processing variables
+            # Heartpy processing variables (using PS1 for heart rate calculation)
             ppg_buffer = deque(maxlen=500)  # Buffer for 10 seconds at 50Hz
             timestamps = deque(maxlen=500)  # Store timestamps for each sample
             last_hr_computation = time.time()
@@ -330,40 +406,55 @@ if __name__ == "__main__":
             while(True):
                 loop_start = time.time()
 
+                # Check if window was closed
+                if window_closed[0]:
+                    break
+
                 try:
-                    data = si1143.read_register(SI1143_I2C_REG_PS1_DATA0, 2)
-                    ps1_data = int.from_bytes(data,  byteorder="little", signed=False)
+                    # Read all 6 channels in a single 12-byte I2C transaction
+                    # ALS_VIS_DATA0 (0x22) through AUX_DATA0 (0x2C) are consecutive registers
+                    combined_data = si1143.read_register(SI1143_I2C_REG_ALS_VIS_DATA0, 12)
 
-                    # Add data to buffer for heart rate processing
-                    ppg_buffer.append(ps1_data)
-                    timestamps.append(loop_start)
+                    # Parse data for each channel using their configured offsets
+                    channel_readings = {}
+                    for channel_id, config in CHANNELS.items():
+                        offset = config['offset']
+                        channel_value = int.from_bytes(combined_data[offset:offset+2], byteorder="little", signed=False)
+                        channel_readings[channel_id] = channel_value
 
-                    # Add raw value to mean calculation buffer
-                    ps1_mean_buf.append(ps1_data)
+                    # Process each channel's data for buffering
+                    for channel_id, data_config in channel_data.items():
+                        channel_value = channel_readings[channel_id]
+                        data_config['buffer'].append(channel_value)
 
-                    # Calculate 5-sample mean
-                    ps1_mean = sum(ps1_mean_buf) / len(ps1_mean_buf)
-
-                    # Append to display buffers
-                    ps1_raw_buf.append(ps1_data)
-                    ps1_smooth_buf.append(ps1_mean)
+                    # Use PS1 data for heart rate processing (primary channel)
+                    if 'PS1' in channel_readings:
+                        ppg_buffer.append(channel_readings['PS1'])
+                        timestamps.append(loop_start)
 
                     counters['sample_count'] += 1
 
-                    # Create x-axis that starts from 0 and matches the actual buffer length
-                    buffer_length = len(ps1_raw_buf)
-                    x = list(range(buffer_length))
+                    # Update curves for all channels
+                    for channel_id, data_config in channel_data.items():
+                        # Create x-axis that starts from 0 and matches the actual buffer length
+                        buffer_length = len(data_config['buffer'])
+                        x = list(range(buffer_length))
+                        buffer_data = list(data_config['buffer'])
 
-                    # Update curves based on display options
-                    if show_raw:
-                        curve_ps1_raw.setData(x, list(ps1_raw_buf))
-                    else:
-                        curve_ps1_raw.setData([], [])
+                        # Update curve
+                        data_config['curve'].setData(x, buffer_data)
 
-                    if show_smooth:
-                        curve_ps1_smooth.setData(x, list(ps1_smooth_buf))
-                    else:
-                        curve_ps1_smooth.setData([], [])
+                        # Auto-scale Y axis with 10% extra space
+                        if buffer_data:
+                            y_min = min(buffer_data)
+                            y_max = max(buffer_data)
+                            y_range = y_max - y_min
+                            if y_range > 0:
+                                y_margin = y_range * 0.1
+                                data_config['plot'].setYRange(y_min - y_margin, y_max + y_margin, padding=0)
+                            else:
+                                # Handle case where all values are the same
+                                data_config['plot'].setYRange(y_min - abs(y_min) * 0.1 - 1, y_max + abs(y_max) * 0.1 + 1, padding=0)
 
                     # Process Qt events to update the GUI
                     app.processEvents()
@@ -402,8 +493,7 @@ if __name__ == "__main__":
 
                             # Update heart rate display
                             current_bpm = measures['bpm']
-                            hr_text.setText(f"BPM: {current_bpm:.1f}")
-                            hr_text.setPos(10, plot.getViewBox().viewRange()[1][1] - 20)
+                            bpm_label.setText(f"BPM: {current_bpm:.1f}")
 
                             # Display heart rate results
                             print(f"\n--- Heart Rate Analysis ---")
@@ -430,8 +520,7 @@ if __name__ == "__main__":
                 if sleep_time > 0:
                     time.sleep(sleep_time)
 
-            # Start Qt event loop when done
-            # sys.exit(app.exec_())
+            print("info: Window closed, exiting...")
             
     # Disconnect tag 
     acr.disconnect()
