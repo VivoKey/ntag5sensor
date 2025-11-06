@@ -1,0 +1,27 @@
+Pulse
+-----
+
+LED1:
+Wavelength: 940nm (Infrared)
+Max current: 40 mA, peak >1 A
+Voltage: 1.2 V 
+
+LED2
+Wavelength: 660nm (Red)
+Max current: 30 mA, peak 150 mA
+Voltage: 2.1 V
+
+LED3:
+Not connected
+
+
+MikroElektronika
+----------------
+
+LED1:
+Wavelength: 870nm (Infrared)
+Current: 20 mA, peak 100 mA
+Voltage: 1.4 V
+
+LED2, LED3:
+Not connected
