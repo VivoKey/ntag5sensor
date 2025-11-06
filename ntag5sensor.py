@@ -70,12 +70,6 @@ SI1143_CHANNELS = {
         'name': 'PS2',
         'show': True
     },
-    'PS3': {
-        'offset': 8,
-        'color': 'blue',
-        'name': 'PS3',
-        'show': True
-    },
     'AUX': {
         'offset': 10,
         'color': 'white',
@@ -278,38 +272,25 @@ if __name__ == "__main__":
             print("info: Configuring SI1143 sensor for measurements")
             # Configure channel list, enable AUX, ALS IR, ALS visible, PS1 and PS2
             si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_CHLIST, 
-                SI1143_CHLIST_EN_AUX | SI1143_CHLIST_EN_ALS_IR | SI1143_CHLIST_EN_ALS_VIS |
-                SI1143_CHLIST_EN_PS1 | SI1143_CHLIST_EN_PS2)
+                SI1143_CHLIST_EN_AUX | SI1143_CHLIST_EN_ALS_IR | SI1143_CHLIST_EN_ALS_VIS | SI1143_CHLIST_EN_PS1 | SI1143_CHLIST_EN_PS2)
             # Configure which LED is driver for each channel
             # LED1 for PS1, LED2 for PS2, and none for PS3
-            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PSLED12_SELECT,
-                SI1143_PSLED12_SELECT_PS1_LED1 | SI1143_PSLED12_SELECT_PS2_LED2)
-            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PSLED3_SELECT,
-                SI1143_PSLED3_SELECT_PS3_NONE)
+            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PSLED12_SELECT, SI1143_PSLED12_SELECT_PS1_LED1 | SI1143_PSLED12_SELECT_PS2_LED2)
+            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PSLED3_SELECT, SI1143_PSLED3_SELECT_PS3_NONE)
             # Configure PS ADC parameters
-            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PS_ADC_MISC,
-                SI1143_PS_ADC_MISC_NORMAL_SIGNAL_RANGE | SI1143_PS_ADC_MISC_NORMAL_PROX_MEAS_MODE)
-            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PS_ADC_GAIN,
-                SI1143_PS_ADC_GAIN_DIV_2)
+            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PS_ADC_MISC, SI1143_PS_ADC_MISC_NORMAL_SIGNAL_RANGE | SI1143_PS_ADC_MISC_NORMAL_PROX_MEAS_MODE)
+            si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PS_ADC_GAIN, SI1143_PS_ADC_GAIN_DIV_2)
             # Setup interrupts
-            si1143.write_register(SI1143_I2C_REG_INT_CFG, [ 0x00 ])
-            #    [SI1143_INT_CFG_AUTO_CLEAR | SI1143_INT_CFG_PIN_EN])
-            si1143.write_register(SI1143_I2C_REG_IRQ_ENABLE, 
-                [SI1143_IRQ_ENABLE_PS1_INT_EN | SI1143_IRQ_ENABLE_PS2_INT_EN])
-            si1143.write_register(SI1143_I2C_REG_IRQ_MODE1, [ 0x00 ])
-            #    [SI1143_CMD_INT_FLAG])
-            #si1143.write_register(SI1143_I2C_REG_IRQ_MODE2, 
-            #    [SI1143_CMD_INT_RESP_ERROR])
-            # Setup measurement rate
-            si1143.write_register(SI1143_I2C_REG_MEAS_RATE, 
-                [0x94])
-            si1143.write_register(SI1143_I2C_REG_ALS_RATE, 
-                [SI1143_MEAS_AFTER_EVERY_WAKEUP])
-            si1143.write_register(SI1143_I2C_REG_PS_RATE,
-                 [SI1143_MEAS_AFTER_EVERY_WAKEUP])
+            si1143.write_register(SI1143_I2C_REG_INT_CFG, [ 0x00 ]) # [SI1143_INT_CFG_AUTO_CLEAR | SI1143_INT_CFG_PIN_EN])
+            si1143.write_register(SI1143_I2C_REG_IRQ_ENABLE, [SI1143_IRQ_ENABLE_PS1_INT_EN | SI1143_IRQ_ENABLE_PS2_INT_EN])
+            si1143.write_register(SI1143_I2C_REG_IRQ_MODE1, [ 0x00 ]) # [SI1143_CMD_INT_FLAG])
+            # si1143.write_register(SI1143_I2C_REG_IRQ_MODE2, [SI1143_CMD_INT_RESP_ERROR])
+            # Setup measurement rate, 20ms cycle = 50Hz
+            si1143.write_register(SI1143_I2C_REG_MEAS_RATE, [SI1143.compute_meas_rate(20)])
+            si1143.write_register(SI1143_I2C_REG_ALS_RATE, [SI1143_MEAS_AFTER_EVERY_WAKEUP])
+            si1143.write_register(SI1143_I2C_REG_PS_RATE, [SI1143_MEAS_AFTER_EVERY_WAKEUP])
             # Setup LED current, 22.4 mA for both
-            si1143.write_register(SI1143_I2C_REG_PS_LED21, 
-                [0b00110011])
+            si1143.write_register(SI1143_I2C_REG_PS_LED21, [(SI1143_PSLED_CURRENT_22_4 << 4) | SI1143_PSLED_CURRENT_22_4])
             # Set auto mode for both PS and ALS
             si1143.command(SI1143_CMD_PSALS_AUTO)
 
@@ -321,11 +302,7 @@ if __name__ == "__main__":
             graph.show()
 
             # Create heart rate calculator (using PS1 for heart rate calculation)
-            hr_calculator = HeartRateCalculator(
-                buffer_size = 500,  # Buffer for 10 seconds at 50Hz
-                computation_interval = 5.0,  # Compute HR every 5 seconds
-                min_samples = 150  # Minimum 3 seconds of data for HR calculation
-            )
+            hr_calculator = HeartRateCalculator(buffer_size = 500, computation_interval = 5.0, min_samples = 150)
             target_period = 0.02  # 20ms for 50 Hz
 
             while(True):

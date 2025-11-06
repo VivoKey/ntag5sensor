@@ -16,7 +16,7 @@ TRANS_FUNC_SWITCH_PROTOCOL =                0x02
 MANAGE_BEGIN_TRANSPARENT_SESSION =          bytes([0x81, 0x00])
 MANAGE_END_TRANSPARENT_SESSION =            bytes([0x82, 0x00])
 
-# Protocol switiching commands
+# Protocol switching commands
 SWITCH_PROTOCOL_ISO15693_L3 =               bytes([0x8F, 0x02, 0x02, 0x03])
 
 # Wrapping response error code tag

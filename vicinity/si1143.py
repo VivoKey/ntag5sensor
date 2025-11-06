@@ -1,5 +1,7 @@
 import time
+
 from .i2cbase import I2CBase
+
 
 SI1143_I2C_ADDRESS =                0x5A
 
@@ -154,6 +156,23 @@ SI1143_PSLED3_SELECT_PS3_LED1 =     0x01
 SI1143_PSLED3_SELECT_PS3_LED2 =     0x02
 SI1143_PSLED3_SELECT_PS3_LED3 =     0x04
 
+# LED driver current selection in mA (VLEDn = 1V)
+SI1143_PSLED_CURRENT_5_6 =          0x01
+SI1143_PSLED_CURRENT_11_2 =         0x02
+SI1143_PSLED_CURRENT_22_4 =         0x03
+SI1143_PSLED_CURRENT_45 =           0x04
+SI1143_PSLED_CURRENT_67 =           0x05
+SI1143_PSLED_CURRENT_90 =           0x06
+SI1143_PSLED_CURRENT_112 =          0x07
+SI1143_PSLED_CURRENT_135 =          0x08
+SI1143_PSLED_CURRENT_157 =          0x09
+SI1143_PSLED_CURRENT_180 =          0x0A
+SI1143_PSLED_CURRENT_202 =          0x0B
+SI1143_PSLED_CURRENT_224 =          0x0C
+SI1143_PSLED_CURRENT_269 =          0x0D
+SI1143_PSLED_CURRENT_314 =          0x0E
+SI1143_PSLED_CURRENT_359 =          0x0F
+
 # ADC misc configuration
 SI1143_PS_ADC_MISC_NORMAL_SIGNAL_RANGE =    0x00
 SI1143_PS_ADC_MISC_HIGH_SIGNAL_RANGE =      0x20
@@ -298,3 +317,39 @@ class SI1143(I2CBase):
         else:
             # Wait for reset command to finish
             time.sleep(0.01)
+
+    @staticmethod
+    def uncompress_value(input_byte):
+        if (input_byte < 8):
+            # Denormalized case: return 0 if fraction < 0.5
+            return 0
+        exponent = input_byte >> 4
+        mantissa = 0x10 | (input_byte & 0x0F)  # Add implicit 1-bit
+        return mantissa << (exponent - 4) if exponent >= 4 else mantissa >> (4 - exponent)
+
+    @staticmethod
+    def compress_value(input_value):
+        if (input_value <= 1):
+            return 0x08 if input_value == 1 else 0x00
+        # Find exponent: position of most significant bit
+        exponent = input_value.bit_length() - 1
+        if (exponent < 5):
+            # No rounding needed for small values
+            mantissa = input_value << (4 - exponent)
+            return (exponent << 4) | (mantissa & 0xF)
+        # Extract 5-bit mantissa for rounding
+        mantissa = input_value >> (exponent - 5)
+        # Round up if bit 0 is set (represents 2^-5)
+        if (mantissa & 1):
+            mantissa += 2
+            # Handle carry overflow
+            if (mantissa & 0x40):
+                exponent += 1
+                mantissa >>= 1
+        return (exponent << 4) | ((mantissa >> 1) & 0xF)
+
+    @staticmethod
+    def compute_meas_rate(cycle_time_ms):
+        b = ((cycle_time_ms * 1000) / 62.5) - 2.5
+        a = max(1, min(65535, int(2 * b + 1)))
+        return SI1143.compress_value(a)
