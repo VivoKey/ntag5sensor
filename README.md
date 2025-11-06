@@ -8,13 +8,14 @@ For development hardware, use e.g. the MikroElektronika [NTAG 5 Link Click](http
 
 Install [Python 3](https://www.python.org/downloads/) and Pip (usually packaged with Python), both are probably available via your package manager. Use Pip in the terminal to install the requirements, I suggest to use a virtual environment but it works just as well without one.
 
+Linux: 
 ```
 python3 -m venv myenv
 source myenv/bin/activate
 pip install -r requirements.txt
 ``` 
 
-You can also install the packages any other way you like, required modules are `pyscard`, `ber-tlv`. If you use Nix, Flake and EnvRC files are provided.
+You can also install the packages any other way you like. If you use Nix, Flake and EnvRC files are provided.
 
 ## Usage
 
@@ -197,16 +198,25 @@ options:
   -mo, --mode [{oneshot,continuous}]
                         Mode to operate the connected sensor chip in (default: oneshot)
 
-usage: ntag5sensor.py si1143 [-h] {info} ...
+usage: ntag5sensor.py si1143 [-h] {info,read} ...
 
 positional arguments:
-  {info}      desired action to perform on the connected SI1143 sensor
-    info      read information and configuration of the connected SI1143 sensor
+  {info,read}  desired action to perform on the connected SI1143 sensor
+    info       read information and configuration of the connected SI1143 sensor
+    read       read measurement data from the connected SI1143 sensor
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help   show this help message and exit
 
 usage: ntag5sensor.py si1143 info [-h] [-r [READER]] [-t]
+
+options:
+  -h, --help            show this help message and exit
+  -r, --reader [READER]
+                        index of the available ACR1552 readers to use (default: 0)
+  -t, --trace           trace all raw ISO15693 communication
+
+usage: ntag5sensor.py si1143 read [-h] [-r [READER]] [-t]
 
 options:
   -h, --help            show this help message and exit
