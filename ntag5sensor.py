@@ -12,12 +12,6 @@
 # ///
 
 import time, sys
-from collections import deque
-
-from PyQt5 import QtWidgets
-import pyqtgraph as pg
-import heartpy
-import numpy as np
 
 from reader.acr1552 import ACR1552
 from vicinity.ntag5link import *
@@ -26,6 +20,8 @@ from vicinity.tmp112 import *
 from vicinity.si1143 import *
 
 from cli import argparser, display
+from cli.graph import RealtimeGraph
+from cli.heartbeat import HeartRateCalculator
 
 
 # Energy selection options from CLI
@@ -45,6 +41,47 @@ V_SEL_CLI = {
     "1.8": NXP_EH_CONFIG_EH_VOUT_V_SEL_1_8,
     "2.4": NXP_EH_CONFIG_EH_VOUT_V_SEL_2_4,
     "3.0": NXP_EH_CONFIG_EH_VOUT_V_SEL_3_0
+}
+
+# Channel configuration for all 6 SI1143 channels
+# offset: byte offset in the 12-byte data chunk (each channel is 2 bytes)
+SI1143_CHANNELS = {
+    'ALS_VIS': {
+        'offset': 0,
+        'color': 'yellow',
+        'name': 'ALS Visible',
+        'show': True
+    },
+    'ALS_IR': {
+        'offset': 2,
+        'color': 'magenta',
+        'name': 'ALS IR',
+        'show': True
+    },
+    'PS1': {
+        'offset': 4,
+        'color': 'red',
+        'name': 'PS1',
+        'show': True
+    },
+    'PS2': {
+        'offset': 6,
+        'color': 'green',
+        'name': 'PS2',
+        'show': True
+    },
+    'PS3': {
+        'offset': 8,
+        'color': 'blue',
+        'name': 'PS3',
+        'show': True
+    },
+    'AUX': {
+        'offset': 10,
+        'color': 'white',
+        'name': 'AUX',
+        'show': True
+    }
 }
 
 
@@ -239,25 +276,21 @@ if __name__ == "__main__":
 
         elif(args.verb == "read"):
             print("info: Configuring SI1143 sensor for measurements")
-
             # Configure channel list, enable AUX, ALS IR, ALS visible, PS1 and PS2
             si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_CHLIST, 
                 SI1143_CHLIST_EN_AUX | SI1143_CHLIST_EN_ALS_IR | SI1143_CHLIST_EN_ALS_VIS |
                 SI1143_CHLIST_EN_PS1 | SI1143_CHLIST_EN_PS2)
-
             # Configure which LED is driver for each channel
             # LED1 for PS1, LED2 for PS2, and none for PS3
             si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PSLED12_SELECT,
                 SI1143_PSLED12_SELECT_PS1_LED1 | SI1143_PSLED12_SELECT_PS2_LED2)
             si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PSLED3_SELECT,
                 SI1143_PSLED3_SELECT_PS3_NONE)
-
             # Configure PS ADC parameters
             si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PS_ADC_MISC,
                 SI1143_PS_ADC_MISC_NORMAL_SIGNAL_RANGE | SI1143_PS_ADC_MISC_NORMAL_PROX_MEAS_MODE)
             si1143.command(SI1143_CMD_PARAM_SET | SI1143_PARAM_PS_ADC_GAIN,
                 SI1143_PS_ADC_GAIN_DIV_2)
-
             # Setup interrupts
             si1143.write_register(SI1143_I2C_REG_INT_CFG, [ 0x00 ])
             #    [SI1143_INT_CFG_AUTO_CLEAR | SI1143_INT_CFG_PIN_EN])
@@ -267,7 +300,6 @@ if __name__ == "__main__":
             #    [SI1143_CMD_INT_FLAG])
             #si1143.write_register(SI1143_I2C_REG_IRQ_MODE2, 
             #    [SI1143_CMD_INT_RESP_ERROR])
-
             # Setup measurement rate
             si1143.write_register(SI1143_I2C_REG_MEAS_RATE, 
                 [0x94])
@@ -275,244 +307,58 @@ if __name__ == "__main__":
                 [SI1143_MEAS_AFTER_EVERY_WAKEUP])
             si1143.write_register(SI1143_I2C_REG_PS_RATE,
                  [SI1143_MEAS_AFTER_EVERY_WAKEUP])
-
-            # Setup LED current
-            # 22.4 mA for both
+            # Setup LED current, 22.4 mA for both
             si1143.write_register(SI1143_I2C_REG_PS_LED21, 
                 [0b00110011])
-
             # Set auto mode for both PS and ALS
             si1143.command(SI1143_CMD_PSALS_AUTO)
 
             # Read sensor measurements continuously
             print("info: Reading SI1143 sensor data")
 
-            # Show a QT window
-            app = QtWidgets.QApplication(sys.argv)
+            # Create the realtime graph with SI1143 channels
+            graph = RealtimeGraph(SI1143_CHANNELS, window_title="Realtime Heartbeat")
+            graph.show()
 
-            # Create main window with layout
-            main_widget = QtWidgets.QWidget()
-            main_widget.setWindowTitle("Realtime Heartbeat")
-            layout = QtWidgets.QVBoxLayout(main_widget)
-
-            # Channel configuration for all 6 SI1143 channels
-            # offset: byte offset in the 12-byte data chunk (each channel is 2 bytes)
-            CHANNELS = {
-                'ALS_VIS': {
-                    'offset': 0,
-                    'color': 'yellow',
-                    'name': 'ALS Visible',
-                    'show': True
-                },
-                'ALS_IR': {
-                    'offset': 2,
-                    'color': 'magenta',
-                    'name': 'ALS IR',
-                    'show': True
-                },
-                'PS1': {
-                    'offset': 4,
-                    'color': 'red',
-                    'name': 'PS1',
-                    'show': True
-                },
-                'PS2': {
-                    'offset': 6,
-                    'color': 'green',
-                    'name': 'PS2',
-                    'show': True
-                },
-                'PS3': {
-                    'offset': 8,
-                    'color': 'blue',
-                    'name': 'PS3',
-                    'show': True
-                },
-                'AUX': {
-                    'offset': 10,
-                    'color': 'white',
-                    'name': 'AUX',
-                    'show': True
-                }
-            }
-
-            # Create graph widget with multiple plots
-            graph_widget = pg.GraphicsLayoutWidget()
-
-            # Create individual plots for each channel
-            plots = {}
-            visible_channels = [ch_id for ch_id, config in CHANNELS.items() if config['show']]
-
-            for i, (channel_id, config) in enumerate(CHANNELS.items()):
-                if config['show']:
-                    if i > 0:
-                        graph_widget.nextRow()
-                    plot = graph_widget.addPlot(labels={'left': config['name'], 'bottom': 'Samples' if i == len(visible_channels)-1 else ''})
-                    plot.showGrid(x=True, y=True, alpha=0.3)
-                    plot.enableAutoRange('x', True)  # Only auto-range X, we'll handle Y manually
-                    plots[channel_id] = plot
-
-            # Create BPM label
-            bpm_label = QtWidgets.QLabel("BPM: --")
-            bpm_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;")
-
-            # Add widgets to layout
-            layout.addWidget(graph_widget)
-            layout.addWidget(bpm_label)
-
-            # Show the main widget
-            main_widget.show()
-
-            # Track if window is closed
-            window_closed = [False]
-
-            def on_window_close():
-                window_closed[0] = True
-
-            main_widget.closeEvent = lambda event: on_window_close()
-
-            # Display options
-            show_raw = True
-            show_hr = True
-
-            # Create curves and buffers for each channel
-            BUFFER_SIZE = 1000
-            channel_data = {}
-
-            for channel_id, config in CHANNELS.items():
-                if config['show']:
-                    channel_data[channel_id] = {
-                        'curve': plots[channel_id].plot(pen=pg.mkPen(color=config['color'], width=2)),
-                        'buffer': deque(maxlen=BUFFER_SIZE),
-                        'offset': config['offset'],
-                        'plot': plots[channel_id]
-                    }
-
-            # Use a mutable object to track sample count
-            counters = {'sample_count': 0}
-
-            # Heart rate display
-            current_bpm = 0.0
-
+            # Create heart rate calculator (using PS1 for heart rate calculation)
+            hr_calculator = HeartRateCalculator(
+                buffer_size = 500,  # Buffer for 10 seconds at 50Hz
+                computation_interval = 5.0,  # Compute HR every 5 seconds
+                min_samples = 150  # Minimum 3 seconds of data for HR calculation
+            )
             target_period = 0.02  # 20ms for 50 Hz
-
-            # Heartpy processing variables (using PS1 for heart rate calculation)
-            ppg_buffer = deque(maxlen=500)  # Buffer for 10 seconds at 50Hz
-            timestamps = deque(maxlen=500)  # Store timestamps for each sample
-            last_hr_computation = time.time()
-            hr_computation_interval = 5.0  # Compute HR every 5 seconds
-            min_samples_for_hr = 150  # Minimum 3 seconds of data for HR calculation
 
             while(True):
                 loop_start = time.time()
 
                 # Check if window was closed
-                if window_closed[0]:
+                if graph.is_closed():
                     break
 
                 try:
                     # Read all 6 channels in a single 12-byte I2C transaction
                     # ALS_VIS_DATA0 (0x22) through AUX_DATA0 (0x2C) are consecutive registers
                     combined_data = si1143.read_register(SI1143_I2C_REG_ALS_VIS_DATA0, 12)
-
                     # Parse data for each channel using their configured offsets
                     channel_readings = {}
-                    for channel_id, config in CHANNELS.items():
-                        offset = config['offset']
-                        channel_value = int.from_bytes(combined_data[offset:offset+2], byteorder="little", signed=False)
+                    for channel_id, config in SI1143_CHANNELS.items():
+                        channel_value = int.from_bytes(combined_data[config['offset']:config['offset']+2], byteorder="little", signed=False)
                         channel_readings[channel_id] = channel_value
-
-                    # Process each channel's data for buffering
-                    for channel_id, data_config in channel_data.items():
-                        channel_value = channel_readings[channel_id]
-                        data_config['buffer'].append(channel_value)
-
+                    # Update the graph with new data
+                    graph.update_data(channel_readings)
                     # Use PS1 data for heart rate processing (primary channel)
-                    if 'PS1' in channel_readings:
-                        ppg_buffer.append(channel_readings['PS1'])
-                        timestamps.append(loop_start)
-
-                    counters['sample_count'] += 1
-
-                    # Update curves for all channels
-                    for channel_id, data_config in channel_data.items():
-                        # Create x-axis that starts from 0 and matches the actual buffer length
-                        buffer_length = len(data_config['buffer'])
-                        x = list(range(buffer_length))
-                        buffer_data = list(data_config['buffer'])
-
-                        # Update curve
-                        data_config['curve'].setData(x, buffer_data)
-
-                        # Auto-scale Y axis with 10% extra space
-                        if buffer_data:
-                            y_min = min(buffer_data)
-                            y_max = max(buffer_data)
-                            y_range = y_max - y_min
-                            if y_range > 0:
-                                y_margin = y_range * 0.1
-                                data_config['plot'].setYRange(y_min - y_margin, y_max + y_margin, padding=0)
-                            else:
-                                # Handle case where all values are the same
-                                data_config['plot'].setYRange(y_min - abs(y_min) * 0.1 - 1, y_max + abs(y_max) * 0.1 + 1, padding=0)
-
-                    # Process Qt events to update the GUI
-                    app.processEvents()
-
+                    if ('PS1' in channel_readings):
+                        hr_calculator.add_sample(channel_readings['PS1'], loop_start)
                     # Periodic heart rate computation
-                    current_time = time.time()
-                    if (current_time - last_hr_computation >= hr_computation_interval and
-                        len(ppg_buffer) >= min_samples_for_hr):
-
-                        try:
-                            # Convert buffer to numpy array and scale data
-                            ppg_data = np.array(list(ppg_buffer), dtype=float)
-
-                            # Calculate sample rate using heartpy's mstimer function
-                            timerdata = np.array(list(timestamps), dtype=float) * 1000.0
-                            sample_rate = heartpy.get_samplerate_mstimer(timerdata)
-
-                            # Filter out signal noise
-                            filtered_data = heartpy.filter_signal(
-                                ppg_data,
-                                cutoff = [0.8, 2.5],
-                                sample_rate=sample_rate,
-                                filtertype='bandpass',
-                                order=3
-                            )
-
-                            # Scale filtered data
-                            scaled_data = heartpy.scale_data(filtered_data)
-
-                            # Process with HeartPy
-                            working_data, measures = heartpy.process(
-                                scaled_data,
-                                sample_rate,
-                                report_time=False
-                            )
-
-                            # Update heart rate display
-                            current_bpm = measures['bpm']
-                            bpm_label.setText(f"BPM: {current_bpm:.1f}")
-
-                            # Display heart rate results
-                            print(f"\n--- Heart Rate Analysis ---")
-                            print(f"BPM: {measures['bpm']:.2f}")
-                            print(f"IBI: {measures['ibi']:.2f} ms")
-                            print(f"SDNN: {measures['sdnn']:.2f} ms")
-                            print(f"RMSSD: {measures['rmssd']:.2f} ms")
-                            print(f"Peaks detected: {len(working_data['peaklist'])}")
-                            print("--- End Analysis ---\n")
-
-                        except Exception as e:
-                            print(f"Heart rate analysis failed: {e}")
-
-                        last_hr_computation = current_time
-
+                    measures = hr_calculator.compute_heart_rate()
+                    if (measures != None):
+                        # Update heart rate display
+                        graph.set_info_text(f"BPM: {measures['bpm']:.1f}")
+                        # Display heart rate results
+                        print(f"info: Heart rate: {measures['bpm']:.2f} bpm, IBI: {measures['ibi']:.2f} ms, SDNN: {measures['sdnn']:.2f} ms, " + 
+                            f"RMSSD: {measures['rmssd']:.2f} ms, Peaks: {len(measures.get('peaklist', []))}")
                 except Exception as e:
                     pass
-                    # Avoid crashing the UI on occasional read errors
-                    #print(f"\nwarn: sensor read failed: {e}")
 
                 # Calculate elapsed time and delay to maintain 50 Hz
                 loop_elapsed = time.time() - loop_start
