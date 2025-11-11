@@ -1,0 +1,3 @@
+https://github.com/moderndevice/SI1143_Pulse_Prox_Sensors
+
+https://github.com/silabs-steveegerter/Gecko_SDK/tree/master/kits/EFM32WG_STK3800/examples/biometric

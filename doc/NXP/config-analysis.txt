@@ -1,0 +1,30 @@
+022B (System information)
+(sandra) 00  0F 00108449580104 E00000FF0301
+(mikroe) 00  0F 00118D50580104 E00000FF0301
+Comment: Only UIDs differ, expected
+
+023B7F (Extended system information)
+(sandra) 00  7F 00108449580104 E00000FF010301EF7F6F000100
+(mikroe) 00  7F 00118D50580104 E00000FF010301EF7F6F000100
+Comment: Only UIDs differ, expected
+
+02AB04 (NXP information)
+(sandra) 00  FF0000FFF10764
+(mikroe) 00  FF0000FFF10764
+Comment: Same chip, no locking active!
+
+02C0043700 (Persistent system configuration)
+(sandra) 00  00 12 0F 00
+(mikroe) 00  08 12 FF 00
+Comment: Differences in CONFIG_0 and CONFIG_2:
+Mikroe specifies 01b for EH_MODE (Energy harvesting optimized for low field strength, the default value), 
+whereas Sandras chip uses the value 00b, which is RFU / invalid according to the datasheet.
+Mikroe specifies 11b for both GPIO1_IN and GPIO0_IN (Plain input with weak pull-dow, the default value),
+but Sandras chip specifies 00b for both registers (Receiver disabled, which is according to the datasheet also the default (???))
+
+02C0043D00 (Persistent energy configuration)
+(sandra) 00  01 00 00 00
+(mikroe) 00  00 00 00 00
+Comment: Differences in EH_CONFIG:
+Sandras chip enables EH always via the static persistent config, instead of enabling it via the runtime registers like mikroe.
+Interestingly, it uses the same voltage (1.8 V) and current (0.4 mA) limits, and does not disable the power check.

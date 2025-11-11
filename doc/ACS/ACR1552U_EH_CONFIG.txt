@@ -1,0 +1,31 @@
+EH_CONFIG
+	EH_ENABLE = want to be false
+	EH_DISABLE_POWER_CHECK = want to be false
+EH_CONFIG_REG
+	EH_TRIGGER = 
+	EH_ENABLE = turn on energy harvesting
+	EH_LOAD_OK = session reg sufficient energy available
+EH_STATUS (reg)
+	EH_VCC_SUPPLY_OK = 
+
+- read NDEF data in weak mode with EH_CONFIG off
+	- EH_CONFIG is off
+	- tag presented in weak zone
+	- can we read real NDEF data from user memory in this state?
+	- set EH_TRIGGER bit 
+	- read EH_LOAD_OK bit = 0 (check for sufficient power to confirm weak mode operation)
+	- can we read real NDEF data from user memory in this state?
+
+- read NDEF data in weak mode with EH_TRIGGER activated
+	- EH_CONFIG is off
+	- tag presented in weak zone
+
+===============
+dnfc://NfcV/02C1043D00000000 000b >0.4 mA (Default)
+dnfc://NfcV/02C1043D10000000 001b >0.6 mA
+dnfc://NfcV/02C1043D20000000 010b >1.4 mA
+dnfc://NfcV/02C1043D30000000 011b >2.7 mA
+dnfc://NfcV/02C1043D40000000 100b >4.0 mA
+dnfc://NfcV/02C1043D50000000 101b >6.5 mA
+dnfc://NfcV/02C1043D60000000 110b >9.0 mA
+dnfc://NfcV/02C1043D70000000 111b >12.5 mA

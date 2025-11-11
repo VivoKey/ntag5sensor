@@ -1,0 +1,199 @@
+=================================================================
+HID OmniKey 5022CL ISO15693
+=================================================================
+apdu	FF 68 0E 03 
+Lc	0F
+header	05 00 00 00 00 00 00 00 00 00
+payload	02 C0 04 3D 01
+	flag	02
+	command	C0
+	NXP	04
+	READ	3D
+	blocks	00 (+1)
+
+< FF 68 0E 03 0F 05 00 00 00 00 00 00 00 00 00 02 C0 04 3D 00
+> 00 00 00 00 00 0A 00 (9000)
+	STS	00 'success
+	RxB	00 'bits in response
+	flag	00 'response flag
+	response bytes N
+		00 00 0A 00
+
+< FF 68 0E 03 0F 05 00 00 00 00 00 00 00 00 00 02 C0 04 3D 01
+> 00 00 00 00 00 0A 00 54 00 09 02 (9000)
+	STS	00 'success
+	RxB	00 'bits in response
+	flag	00 'response flag
+	response bytes N
+		00 00 0A 00
+		54 00 09 02
+
+< FF 68 0E 03 0F 05 00 00 00 00 00 00 00 00 00 02 C0 04 3D 02
+> 00 00 00 00 00 0A 00 54 00 09 02 A5 00 FF FF (9000)
+	STS	00 'success
+	RxB	00 'bits in response
+	flag	00 'response flag
+	response bytes N
+		00 00 0A 00
+		54 00 09 02
+		A5 00 FF FF
+
+< FF 68 0E 03 0F 05 00 00 00 00 00 00 00 00 00 02 C0 04 3D 03
+> 00 00 00 00 00 0A 00 54 00 09 02 A5 00 FF FF 81 FC 5E CF (9000)
+	STS	00 'success
+	RxB	00 'bits in response
+	flag	00 'response flag
+	response bytes N
+		00 00 0A 00
+		54 00 09 02
+		A5 00 FF FF
+		81 FC 5E CF
+
+< FF 68 0E 03 0F 05 00 00 00 00 00 00 00 00 00 02 C0 04 3D 04
+> 00 00 00 00 00 0A 00 54 00 09 02 A5 00 FF FF 81 FC 5E CF 1F 1F 17 14 (9000)
+	STS	00 'success
+	RxB	00 'bits in response
+	flag	00 'response flag
+	response bytes N
+		00 00 0A 00
+		54 00 09 02
+		A5 00 FF FF
+		1F 1F 17 14
+
+'Android output; 00 00 00 0A 00 54 00 09 02 A5 00 FF FF 81 FC 5E CF 1F 1F 17 14
+	flag: 00
+	00 00 0A 00 
+	54 00 09 02 
+	A5 00 FF FF 
+	81 FC 5E CF 
+	1F 1F 17 14
+
+=================================================================
+ACR1552U ISO15693
+=================================================================
+'start transparent session
+FF C2 00 00 02 81 00
+'switch protocol to ISO15693
+FF C2 00 02 04 8F 02 02 03 00
+'select 
+FF C2 00 01 01 25 00
+'send command to read data block
+FF C2 00 01 07 95 05 02 C0 04 3D 00 00
+'exit transparent session
+FF C2 00 00 02 82 00
+
+
+apdu	FF C2 00 01
+Lc	07
+tlv	95 05 (95 transceive, 05 len)
+payload	02 C0 04 3D 01
+	flag	02
+	command	C0
+	NXP	04
+	READ	3D
+	blocks	00 (+1)
+Le	00
+
+< FF C2 00 01 07 95 05 02 C0 04 3D 00 00
+> C0 03 00 90 00 92 01 00 96 02 00 00 97 05 00 00 00 0A 00 (9000)
+	C0 = generic error status
+	03 = len
+	00 90 00 = error status (no error occurred)
+	92 01 00 = Reception bit Framing Data Object (all bits valid)
+	96 02 00 = Response Status Data Object (no errors)
+	00 = response flag
+	data
+		00 00 0A 00
+
+< FF C2 00 01 07 95 05 02 C0 04 3D 01 00
+> C0 03 00 90 00 92 01 00 96 02 00 00 97 09 00 00 00 0A 00 54 00 09 02 (9000)
+	C0 = generic error status
+	03 = len
+	00 90 00 = error status (no error occurred)
+	92 01 00 = Reception bit Framing Data Object (all bits valid)
+	96 02 00 = Response Status Data Object (no errors)
+	00 = response flag
+	data
+		00 00 0A 00
+		54 00 09 02
+
+< FF C2 00 01 07 95 05 02 C0 04 3D 02 00
+> C0 03 00 90 00 92 01 00 96 02 00 00 97 0D 00 00 00 0A 00 54 00 09 02 A5 00 FF FF (9000)
+	C0 = generic error status
+	03 = len
+	00 90 00 = error status (no error occurred)
+	92 01 00 = Reception bit Framing Data Object (all bits valid)
+	96 02 00 = Response Status Data Object (no errors)
+	00 = response flag
+	data
+		00 00 0A 00
+		54 00 09 02
+		A5 00 FF FF
+
+< FF C2 00 01 07 95 05 02 C0 04 3D 03 00
+> C0 03 00 90 00 92 01 00 96 02 00 00 97 11 00 00 00 0A 00 54 00 09 02 A5 00 FF FF 81 FC 5E CF (9000)
+	C0 = generic error status
+	03 = len
+	00 90 00 = error status (no error occurred)
+	92 01 00 = Reception bit Framing Data Object (all bits valid)
+	96 02 00 = Response Status Data Object (no errors)
+	00 = response flag
+	data
+		00 00 0A 00
+		54 00 09 02
+		A5 00 FF FF
+		81 FC 5E CF
+
+< FF C2 00 01 07 95 05 02 C0 04 3D 04 00
+> C0 03 00 90 00 92 01 00 96 02 00 00 97 15 00 00 00 0A 00 54 00 09 02 A5 00 FF FF 81 FC 5E CF 1F 1F 17 14 (9000)
+	C0 = generic error status
+	03 = len
+	00 90 00 = error status (no error occurred)
+	92 01 00 = Reception bit Framing Data Object (all bits valid)
+	96 02 00 = Response Status Data Object (no errors)
+	00 = response flag
+	data
+		00 00 0A 00
+		54 00 09 02
+		A5 00 FF FF
+		81 FC 5E CF
+		1F 1F 17 14
+
+===== get system information 0x2B =====
+'start transparent session
+FF C2 00 00 02 81 00
+'switch protocol to ISO15693
+FF C2 00 02 04 8F 02 02 03 00
+'send get system information command
+FF C2 00 01 04 95 02 02 2B 00
+'send get extended system information command
+FF C2 00 01 04 95 02 02 3B 00
+'exit transparent session
+FF C2 00 00 02 82 00
+
+Response;
+NTAG 5: C0 03 00 90 00 92 01 00 96 02 00 00 97 0F 00 0F 00 03 FB 70 58 01 04 E0 00 00 FF 03 01 (9000)
+	flag: 00 (no error)
+	info flags: 0F (indicates fields following)
+	uid: 00 03 FB 70 58 01 04 E0
+	DSFID: 00
+	AFI: 00
+	Memory: FF
+	IC Reference: 03 01
+
+  • ATR: 3B8F8001804F0CA0000003060B00350000000056
+  • ATS: 000003FB70580104E0
+  • HBS: 804F0CA0000003060B003500000000
+
+ICODE DNA: C0 03 00 90 00 92 01 00 96 02 00 00 97 0F 00 0F 6B 4E 9B 00 18 01 04 E0 00 00 3F 03 01 (9000)
+	flag: 00 (no error)
+	info flags: 0F (indicates fields following)
+	uid: 6B 4E 9B 00 18 01 04 E0
+	DSFID: 00
+	AFI: 00
+	Memory: 3F 03
+	IC Reference: 03 01
+
+  • ATR: 3B8F8001804F0CA0000003060B00350000000056
+  • ATS: 006B4E9B00180104E0
+  • HBS: 804F0CA0000003060B003500000000
